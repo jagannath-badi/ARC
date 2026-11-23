@@ -1,7 +1,7 @@
-import type { ExtendedRequest, ExtendedResponse } from './_lib/http.ts';
-import { sendJson } from './_lib/http.ts';
-import { getProviderStatus } from './_lib/provider.ts';
-import { getDatabaseDriver } from './_lib/db.ts';
+import type { ExtendedRequest, ExtendedResponse } from './_lib/http.js';
+import { sendJson } from './_lib/http.js';
+import { getProviderStatus } from './_lib/provider.js';
+import { getDatabaseDriver } from './_lib/db.js';
 
 export default async function handler(_req: ExtendedRequest, res: ExtendedResponse) {
   try {

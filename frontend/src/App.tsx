@@ -713,7 +713,11 @@ export default function App() {
           if (r.dutImage) {
             setActiveDutImage(r.dutImage);
             setActiveDutName('Archived Artifact');
+          } else {
+            setActiveDutImage(null);
+            setActiveDutName(null);
           }
+          setActiveSessionId(r.sessionId);
           void loadSessions();
         }}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}

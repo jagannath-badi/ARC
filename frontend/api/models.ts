@@ -1,6 +1,6 @@
-import type { ExtendedRequest, ExtendedResponse } from './_lib/http.ts';
-import { sendJson } from './_lib/http.ts';
-import { getAvailableModelsList } from './_lib/provider.ts';
+import type { ExtendedRequest, ExtendedResponse } from './_lib/http.js';
+import { sendJson } from './_lib/http.js';
+import { getAvailableModelsList } from './_lib/provider.js';
 
 export default async function handler(_req: ExtendedRequest, res: ExtendedResponse) {
   const models = getAvailableModelsList();

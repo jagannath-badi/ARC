@@ -202,7 +202,7 @@ const markdownComponents: Components = {
       <code
         className={
           className ||
-          'px-1.5 py-0.5 rounded bg-[#10132A] text-[#35FEE4] text-xs font-mono border border-[#1B2042]'
+          'px-1.5 py-0.5 rounded bg-[#10132A] text-[#35FEE4] text-xs font-mono border border-[#1B2042] break-words [overflow-wrap:anywhere]'
         }
         {...props}
       >

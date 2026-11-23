@@ -1,5 +1,5 @@
-import type { ExtendedRequest, ExtendedResponse } from './_lib/http.ts';
-import { getRequestPath, sendJson } from './_lib/http.ts';
+import type { ExtendedRequest, ExtendedResponse } from './_lib/http.js';
+import { getRequestPath, sendJson } from './_lib/http.js';
 
 // 44-byte standard silent WAV header with 0 samples
 const SILENT_WAV_BASE64 = 'UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';

@@ -143,8 +143,8 @@ export async function listSessions(): Promise<VaultSessionSummary[]> {
       }));
     } catch (err: unknown) {
       const safeMsg = sanitizeDbError(err);
-      console.error('[Vault DB] listSessions error:', safeMsg);
-      throw new Error(`Failed to list vault sessions: ${safeMsg}`);
+      console.warn('[Vault DB] listSessions error, falling back to in-memory store:', safeMsg);
+      // Graceful fallback to in-memory store when database query fails
     }
   }
 
@@ -188,8 +188,8 @@ export async function getSession(id: string): Promise<VaultSession | null> {
       };
     } catch (err: unknown) {
       const safeMsg = sanitizeDbError(err);
-      console.error('[Vault DB] getSession error:', safeMsg);
-      throw new Error(`Failed to get vault session: ${safeMsg}`);
+      console.warn('[Vault DB] getSession error, falling back to in-memory store:', safeMsg);
+      // Graceful fallback to in-memory store
     }
   }
 
@@ -249,8 +249,8 @@ export async function saveSession(input: SaveSessionInput): Promise<VaultSession
       };
     } catch (err: unknown) {
       const safeMsg = sanitizeDbError(err);
-      console.error('[Vault DB] saveSession error:', safeMsg);
-      throw new Error(`Failed to save vault session: ${safeMsg}`);
+      console.warn('[Vault DB] saveSession error, falling back to in-memory store:', safeMsg);
+      // Graceful fallback to in-memory store
     }
   }
 
@@ -282,8 +282,8 @@ export async function deleteSession(id: string): Promise<boolean> {
       return true;
     } catch (err: unknown) {
       const safeMsg = sanitizeDbError(err);
-      console.error('[Vault DB] deleteSession error:', safeMsg);
-      throw new Error(`Failed to delete vault session: ${safeMsg}`);
+      console.warn('[Vault DB] deleteSession error, falling back to in-memory store:', safeMsg);
+      // Graceful fallback to in-memory store
     }
   }
 

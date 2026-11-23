@@ -1,15 +1,15 @@
 import { defineConfig, type Plugin, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import healthHandler from './api/health.ts';
-import chatHandler from './api/chat.ts';
-import analyzeHandler from './api/analyze.ts';
-import modelsHandler from './api/models.ts';
-import vaultHandler from './api/vault.ts';
-import learnHandler from './api/learn.ts';
-import authHandler from './api/auth.ts';
-import voiceHandler from './api/voice.ts';
-import type { ExtendedRequest, ExtendedResponse } from './api/_lib/http.ts';
+import healthHandler from './api/health.js';
+import chatHandler from './api/chat.js';
+import analyzeHandler from './api/analyze.js';
+import modelsHandler from './api/models.js';
+import vaultHandler from './api/vault.js';
+import learnHandler from './api/learn.js';
+import authHandler from './api/auth.js';
+import voiceHandler from './api/voice.js';
+import type { ExtendedRequest, ExtendedResponse } from './api/_lib/http.js';
 import path from 'node:path';
 
 // Load environment variables from both frontend/ and root/ for dev server API routes

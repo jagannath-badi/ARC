@@ -1,5 +1,5 @@
-import type { ExtendedRequest, ExtendedResponse } from './_lib/http.ts';
-import { getRequestPath, parseRequestBody, sendJson } from './_lib/http.ts';
+import type { ExtendedRequest, ExtendedResponse } from './_lib/http.js';
+import { getRequestPath, parseRequestBody, sendJson } from './_lib/http.js';
 
 export default async function handler(req: ExtendedRequest, res: ExtendedResponse) {
   const pathname = getRequestPath(req);

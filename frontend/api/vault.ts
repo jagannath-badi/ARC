@@ -1,5 +1,5 @@
-import type { ExtendedRequest, ExtendedResponse } from './_lib/http.ts';
-import { getRequestPath, parseRequestBody, sendJson } from './_lib/http.ts';
+import type { ExtendedRequest, ExtendedResponse } from './_lib/http.js';
+import { getRequestPath, parseRequestBody, sendJson } from './_lib/http.js';
 import {
   listSessions,
   getSession,
@@ -9,7 +9,7 @@ import {
   sanitizeDbError,
   type VaultSession,
   type VaultSessionSummary,
-} from './_lib/db.ts';
+} from './_lib/db.js';
 
 export type { VaultSession, VaultSessionSummary };
 

@@ -1,6 +1,6 @@
-import type { ExtendedRequest, ExtendedResponse } from './_lib/http.ts';
-import { parseRequestBody, sendJson } from './_lib/http.ts';
-import { executeChat, type ArcResponseStyle, type ArcPrivacyMode } from './_lib/provider.ts';
+import type { ExtendedRequest, ExtendedResponse } from './_lib/http.js';
+import { parseRequestBody, sendJson } from './_lib/http.js';
+import { executeChat, type ArcResponseStyle, type ArcPrivacyMode } from './_lib/provider.js';
 
 export default async function handler(req: ExtendedRequest, res: ExtendedResponse) {
   if (req.method !== 'POST') {
@@ -14,6 +14,18 @@ export default async function handler(req: ExtendedRequest, res: ExtendedRespons
 
   try {
     const body = await parseRequestBody(req);
+
+    if (body?.rawBody !== undefined) {
+      sendJson(res, 400, {
+        status: 'error',
+        error_type: 'MALFORMED_JSON_PAYLOAD',
+        answer: 'Malformed JSON payload: Request body contains invalid JSON syntax.',
+        fallback_used: false,
+        attempts: 0,
+      });
+      return;
+    }
+
     const message = body?.message;
 
     if (!message || typeof message !== 'string' || !message.trim()) {

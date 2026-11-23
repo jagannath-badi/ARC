@@ -73,6 +73,47 @@ export const ArcComposer: React.FC<ArcComposerProps> = ({
     }
   };
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    // 1. If an image is pasted directly into the textarea, attach it as DUT/scope artifact
+    const items = Array.from(e.clipboardData?.items || []);
+    const imageItem = items.find((item) => item.type.startsWith('image/'));
+    if (imageItem) {
+      const file = imageItem.getAsFile();
+      if (file) {
+        e.preventDefault();
+        onAttachFile(file);
+        return;
+      }
+    }
+
+    // 2. Multi-line & numbered text paste formatting preservation
+    const rawText = e.clipboardData?.getData('text/plain');
+    if (rawText) {
+      e.preventDefault();
+      // Normalize line endings to standard \n without collapsing spaces or stripping list markers
+      const normalized = rawText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+      const textarea = textareaRef.current;
+      if (textarea) {
+        const start = textarea.selectionStart ?? 0;
+        const end = textarea.selectionEnd ?? 0;
+        const currentVal = textarea.value;
+        const nextVal = currentVal.substring(0, start) + normalized + currentVal.substring(end);
+        setInputPrompt(nextVal);
+
+        const nextCursor = start + normalized.length;
+        requestAnimationFrame(() => {
+          if (textareaRef.current) {
+            textareaRef.current.selectionStart = nextCursor;
+            textareaRef.current.selectionEnd = nextCursor;
+          }
+        });
+      } else {
+        setInputPrompt(normalized);
+      }
+    }
+  };
+
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -191,6 +232,7 @@ export const ArcComposer: React.FC<ArcComposerProps> = ({
             value={inputPrompt}
             onChange={(e) => setInputPrompt(e.target.value)}
             onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
             placeholder={placeholder}
             disabled={isLoading}
             rows={1}

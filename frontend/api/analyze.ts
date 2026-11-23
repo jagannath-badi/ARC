@@ -1,6 +1,6 @@
-import type { ExtendedRequest, ExtendedResponse } from './_lib/http.ts';
-import { parseRequestBody, sendJson } from './_lib/http.ts';
-import { executeVision, type ArcResponseStyle, type ArcPrivacyMode } from './_lib/provider.ts';
+import type { ExtendedRequest, ExtendedResponse } from './_lib/http.js';
+import { parseRequestBody, sendJson } from './_lib/http.js';
+import { executeVision, type ArcResponseStyle, type ArcPrivacyMode } from './_lib/provider.js';
 
 export default async function handler(req: ExtendedRequest, res: ExtendedResponse) {
   if (req.method !== 'POST') {
@@ -14,6 +14,20 @@ export default async function handler(req: ExtendedRequest, res: ExtendedRespons
 
   try {
     const body = await parseRequestBody(req);
+
+    if (body?.rawBody !== undefined) {
+      sendJson(res, 400, {
+        status: 'error',
+        error_type: 'MALFORMED_JSON_PAYLOAD',
+        answer: 'Malformed JSON payload: Request body contains invalid JSON syntax.',
+        provider: 'ARC Vision Engine',
+        model_id: 'arc-vision-error',
+        fallback_used: false,
+        attempts: 0,
+      });
+      return;
+    }
+
     const prompt = body?.prompt || 'Analyze this document, diagram, or visual artifact thoroughly.';
     const model = body?.model || body?.model_id;
     const provider = body?.provider;
