@@ -1,0 +1,32 @@
+[
+  {
+    "question": "Derive the transfer function of a second-order RLC series circuit",
+    "subject": "ECE",
+    "level": "B.Tech 3rd year",
+    "curriculum_context": "Signals and Systems, Oppenheim Ch. 6"
+  },
+  {
+    "question": "Explain the causes of the French Revolution",
+    "subject": "History",
+    "level": "BA 2nd year",
+    "curriculum_context": "Modern European History, Doyle \"Origins of French Revolution\""
+  },
+  {
+    "question": "Write a Python function to implement Dijkstra's shortest path algorithm",
+    "subject": "CS",
+    "level": "B.E. 2nd year",
+    "curriculum_context": "Data Structures & Algorithms, CLRS Ch. 24"
+  },
+  {
+    "question": "Calculate the natural frequency and damping ratio of a mass-spring-damper system",
+    "subject": "Mech",
+    "level": "B.Tech 2nd year",
+    "curriculum_context": "Mechanical Vibrations, Rao Ch. 2"
+  },
+  {
+    "question": "Prove that the square root of 2 is irrational",
+    "subject": "Math",
+    "level": "+3 1st year",
+    "curriculum_context": "Discrete Mathematics, Rosen Ch. 1"
+  }
+]

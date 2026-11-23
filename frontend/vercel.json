@@ -1,11 +1,35 @@
 {
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "https://circuitsnap-api.onrender.com/api/:path*"
+      "source": "/api/chat/stream",
+      "destination": "/api/chat"
     },
     {
-      "source": "/(.*)",
+      "source": "/api/vault/:match*",
+      "destination": "/api/vault"
+    },
+    {
+      "source": "/api/learn/:match*",
+      "destination": "/api/learn"
+    },
+    {
+      "source": "/api/auth/:match*",
+      "destination": "/api/auth"
+    },
+    {
+      "source": "/api/tts",
+      "destination": "/api/voice"
+    },
+    {
+      "source": "/api/stt",
+      "destination": "/api/voice"
+    },
+    {
+      "source": "/api/voices",
+      "destination": "/api/voice"
+    },
+    {
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
   ]

@@ -83,48 +83,48 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in select-none">
       <div
         ref={modalRef}
-        className="w-full max-w-sm bg-slate-950/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_16px_48px_rgba(0,0,0,0.8)] p-5 sm:p-6 relative flex flex-col gap-4 text-slate-100 animate-panel-pop"
+        className="w-full max-w-sm bg-[#0B0D1D]/90 backdrop-blur-xl border border-white/[0.12] rounded-2xl shadow-[0_16px_50px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.06)] p-5 sm:p-6 relative flex flex-col gap-4 text-[#F4F6FB]"
       >
-        {/* Top Floating Close Button */}
+        {/* Floating Close Button */}
         <button
           onClick={handleClose}
           type="button"
-          className="absolute top-3.5 right-3.5 sm:top-4 sm:right-4 p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors min-h-[38px] min-w-[38px] flex items-center justify-center"
-          title="Dismiss (Continue as Guest)"
+          className="absolute top-3.5 right-3.5 sm:top-4 sm:right-4 p-2 rounded-lg text-[#64748B] hover:text-[#F4F6FB] hover:bg-white/[0.06] transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center cursor-pointer"
+          title="Dismiss"
         >
           <X className="w-4 h-4" />
         </button>
 
-        {/* Header Branding */}
+        {/* Header */}
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.15)] flex-shrink-0">
-            <ShieldCheck className="w-5 h-5" />
+          <div className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.10] flex items-center justify-center text-[#818CF8] flex-shrink-0">
+            <ShieldCheck className="w-5 h-5 text-[#35FEE4]" />
           </div>
           <div>
-            <h3 className="text-xs font-mono font-bold tracking-wider uppercase text-cyan-300">
-              Account Sign In
+            <h3 className="text-xs font-mono font-bold tracking-wider uppercase text-[#F4F6FB]">
+              Workspace Authentication
             </h3>
-            <p className="text-[11px] text-slate-400">
-              Sign in to save and access your circuit sessions
+            <p className="text-[11px] text-[#94A3B8]">
+              Sign in to sync your vault documents and sessions
             </p>
           </div>
         </div>
 
-        {/* Tab Controls */}
-        <div className="grid grid-cols-2 p-1 bg-white/[0.03] border border-white/[0.06] rounded-xl text-xs font-mono">
+        {/* Mode Tabs */}
+        <div className="grid grid-cols-2 p-1 bg-[#05060F]/80 border border-white/[0.08] rounded-xl text-xs font-mono">
           <button
             type="button"
             onClick={() => {
               setMode('login');
               setError(null);
             }}
-            className={`py-1.5 rounded-lg transition-all ${
+            className={`py-1.5 rounded-lg transition-all cursor-pointer ${
               mode === 'login'
-                ? 'bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 font-bold shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-white/[0.10] border border-white/[0.16] text-white font-bold shadow-xs'
+                : 'text-[#64748B] hover:text-[#F4F6FB] border border-transparent'
             }`}
           >
             LOG IN
@@ -135,10 +135,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               setMode('register');
               setError(null);
             }}
-            className={`py-1.5 rounded-lg transition-all ${
+            className={`py-1.5 rounded-lg transition-all cursor-pointer ${
               mode === 'register'
-                ? 'bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 font-bold shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-white/[0.10] border border-white/[0.16] text-white font-bold shadow-xs'
+                : 'text-[#64748B] hover:text-[#F4F6FB] border border-transparent'
             }`}
           >
             REGISTER
@@ -148,38 +148,42 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         {/* Form Inputs */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-mono uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-              <User className="w-3 h-3 text-cyan-400" />
-              <span>Username</span>
+            <label htmlFor="auth-operator-username" className="text-[10px] font-mono uppercase tracking-wider text-[#94A3B8] flex items-center gap-1">
+              <User className="w-3 h-3 text-[#818CF8]" />
+              Username
             </label>
             <input
+              id="auth-operator-username"
+              name="username"
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter your username"
+              placeholder="username"
+              className="px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.10] focus:border-[#4F5DFF]/60 focus:ring-1 focus:ring-[#4F5DFF]/40 outline-none text-xs font-mono text-[#F4F6FB] placeholder:text-[#64748B] transition-all"
               required
-              className="bg-white/[0.04] border border-white/10 focus:border-cyan-500/50 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-cyan-500/30 font-mono transition-all"
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-mono uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-              <Lock className="w-3 h-3 text-cyan-400" />
-              <span>Password</span>
+            <label htmlFor="auth-operator-password" className="text-[10px] font-mono uppercase tracking-wider text-[#94A3B8] flex items-center gap-1">
+              <Lock className="w-3 h-3 text-[#818CF8]" />
+              Password
             </label>
             <input
+              id="auth-operator-password"
+              name="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Minimum 6 characters"
+              placeholder="••••••••"
+              className="px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.10] focus:border-[#4F5DFF]/60 focus:ring-1 focus:ring-[#4F5DFF]/40 outline-none text-xs font-mono text-[#F4F6FB] placeholder:text-[#64748B] transition-all"
               required
-              className="bg-white/[0.04] border border-white/10 focus:border-cyan-500/50 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-cyan-500/30 font-mono transition-all"
             />
           </div>
 
           {error && (
-            <div className="p-2.5 rounded-xl bg-rose-950/60 border border-rose-800/60 text-rose-300 text-[11px] font-mono flex items-center gap-2">
-              <AlertCircle className="w-3.5 h-3.5 text-rose-400 flex-shrink-0" />
+            <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 text-[11px] font-mono flex items-center gap-1.5">
+              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
               <span>{error}</span>
             </div>
           )}
@@ -187,22 +191,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <button
             type="submit"
             disabled={isLoading}
-            className="mt-1 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-mono text-xs uppercase tracking-wider font-semibold shadow-lg shadow-cyan-950/40 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+            className="mt-2 w-full py-2.5 rounded-xl bg-gradient-to-r from-[#4F5DFF]/25 via-[#7C88FF]/20 to-[#35FEE4]/25 hover:from-[#4F5DFF]/35 hover:to-[#35FEE4]/35 active:scale-[0.98] text-[#F4F6FB] font-mono text-xs uppercase tracking-wider font-semibold transition-all backdrop-blur-xl border border-white/[0.18] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.15)] flex items-center justify-center gap-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-[#2B3BFF] focus-visible:outline-none"
           >
             {isLoading ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>SIGNING IN...</span>
-              </>
+              <Loader2 className="w-4 h-4 animate-spin text-[#35FEE4]" />
+            ) : mode === 'login' ? (
+              'Authenticate'
             ) : (
-              <span>{mode === 'login' ? 'Sign In' : 'Create Account'}</span>
+              'Create Account'
             )}
           </button>
         </form>
-
-        <p className="text-center text-[10px] text-slate-500 font-mono">
-          You can continue using CircuitSnap without signing in.
-        </p>
       </div>
     </div>
   );

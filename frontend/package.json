@@ -1,5 +1,5 @@
 {
-  "name": "frontend",
+  "name": "arc-frontend",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -7,10 +7,14 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "test:fixes": "node scripts/verify-fixes.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@google/genai": "^3.6.1",
+    "@neondatabase/serverless": "^1.2.1",
     "@tailwindcss/vite": "^4.3.3",
+    "framer-motion": "^14.14.0",
     "katex": "^0.19.0",
     "lucide-react": "^1.59.0",
     "react": "^19.2.8",

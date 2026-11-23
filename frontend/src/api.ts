@@ -98,11 +98,21 @@ export interface VaultStats {
 }
 
 
-const TOKEN_KEY = 'circuitsnap_token';
+const TOKEN_KEY = 'arc_token';
+const LEGACY_TOKEN_KEY = 'circuitsnap_token';
 
 export function getStoredToken(): string | null {
   try {
-    return localStorage.getItem(TOKEN_KEY);
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (token) return token;
+    // Fallback read & one-time migration from legacy circuitsnap_token
+    const legacyToken = localStorage.getItem(LEGACY_TOKEN_KEY);
+    if (legacyToken) {
+      localStorage.setItem(TOKEN_KEY, legacyToken);
+      localStorage.removeItem(LEGACY_TOKEN_KEY);
+      return legacyToken;
+    }
+    return null;
   } catch {
     return null;
   }
@@ -115,6 +125,7 @@ export function setStoredToken(token: string | null): void {
     } else {
       localStorage.removeItem(TOKEN_KEY);
     }
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
   } catch {
     // ignore localStorage errors
   }
@@ -138,8 +149,17 @@ export const ALLOWED_IMAGE_TYPES = [
 
 export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 
+export async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 /**
- * Checks the status of the CircuitSnap FastAPI backend.
+ * Checks the status of the ARC academic API layer.
  */
 export async function checkHealth(): Promise<HealthResponse> {
   const response = await fetch('/api/health');
@@ -147,8 +167,8 @@ export async function checkHealth(): Promise<HealthResponse> {
     let errorDetail = `Health check failed (${response.status})`;
     try {
       const errJson = await response.json();
-      if (errJson && errJson.detail) {
-        errorDetail = typeof errJson.detail === 'string' ? errJson.detail : JSON.stringify(errJson.detail);
+      if (errJson) {
+        errorDetail = errJson.error || (errJson.detail && (typeof errJson.detail === 'string' ? errJson.detail : JSON.stringify(errJson.detail))) || errorDetail;
       }
     } catch {
       // ignore JSON parse error
@@ -179,6 +199,8 @@ export async function fetchAvailableModels(): Promise<ModelOption[]> {
   return data.models || [];
 }
 
+export type ArcResponseStyle = 'academic' | 'guided' | 'natural' | 'concise' | 'engineer';
+
 /**
  * Sends a textual multi-turn chat message to POST /api/chat.
  */
@@ -188,8 +210,18 @@ export async function sendChatMessage(
   model?: string,
   provider?: string,
   modelId?: string,
-  privacyMode?: 'strict' | 'guarded' | 'relaxed'
+  privacyMode?: 'strict' | 'guarded' | 'relaxed',
+  style: ArcResponseStyle = 'academic',
+  vaultContext?: string
 ): Promise<ChatResponse> {
+  const resolvedProvider =
+    provider ||
+    (model?.startsWith('gemini')
+      ? 'Google Gemini'
+      : model === 'openai-gateway'
+      ? 'OpenAI Gateway'
+      : undefined);
+
   const response = await fetch('/api/chat', {
     method: 'POST',
     headers: getAuthHeaders({
@@ -199,9 +231,12 @@ export async function sendChatMessage(
       message,
       history,
       model: model || undefined,
-      provider: provider || undefined,
+      provider: resolvedProvider,
       model_id: modelId || undefined,
       privacy_mode: privacyMode || undefined,
+      style: style || 'academic',
+      stream: false,
+      vault_context: vaultContext,
     }),
   });
 
@@ -209,8 +244,8 @@ export async function sendChatMessage(
     let errorDetail = `Chat request failed (${response.status})`;
     try {
       const errJson = await response.json();
-      if (errJson && errJson.detail) {
-        errorDetail = typeof errJson.detail === 'string' ? errJson.detail : JSON.stringify(errJson.detail);
+      if (errJson) {
+        errorDetail = errJson.answer || errJson.error || errJson.detail || errorDetail;
       }
     } catch {
       // ignore JSON parse error
@@ -222,42 +257,49 @@ export async function sendChatMessage(
 }
 
 /**
- * Sends an image (with optional prompt) to POST /api/analyze using FormData.
+ * Sends an image (with optional prompt) to POST /api/analyze using base64 payload.
  */
 export async function analyzeImage(
   file: File,
   prompt?: string,
   model?: string,
   provider?: string,
-  modelId?: string
+  modelId?: string,
+  style: ArcResponseStyle = 'academic',
+  privacyMode?: 'strict' | 'guarded' | 'relaxed'
 ): Promise<ChatResponse> {
-  const formData = new FormData();
-  formData.append('file', file);
-  if (prompt && prompt.trim()) {
-    formData.append('prompt', prompt.trim());
-  }
-  if (model) {
-    formData.append('model', model);
-  }
-  if (provider) {
-    formData.append('provider', provider);
-  }
-  if (modelId) {
-    formData.append('model_id', modelId);
-  }
+  const base64Data = await fileToBase64(file);
+  const resolvedProvider =
+    provider ||
+    (model?.startsWith('gemini')
+      ? 'Google Gemini'
+      : model === 'openai-gateway'
+      ? 'OpenAI Gateway'
+      : undefined);
 
   const response = await fetch('/api/analyze', {
     method: 'POST',
-    headers: getAuthHeaders(),
-    body: formData,
+    headers: getAuthHeaders({
+      'Content-Type': 'application/json',
+    }),
+    body: JSON.stringify({
+      image: base64Data,
+      mime_type: file.type || 'image/jpeg',
+      prompt: prompt?.trim() || undefined,
+      model: model || undefined,
+      provider: resolvedProvider,
+      model_id: modelId || undefined,
+      style: style || 'academic',
+      privacy_mode: privacyMode || undefined,
+    }),
   });
 
   if (!response.ok) {
     let errorDetail = `Image analysis failed (${response.status})`;
     try {
       const errJson = await response.json();
-      if (errJson && errJson.detail) {
-        errorDetail = typeof errJson.detail === 'string' ? errJson.detail : JSON.stringify(errJson.detail);
+      if (errJson) {
+        errorDetail = errJson.answer || errJson.error || errJson.detail || errorDetail;
       }
     } catch {
       // ignore JSON parse error
@@ -497,7 +539,9 @@ export interface StreamChatOptions {
   provider?: string;
   modelId?: string;
   responseStyle?: string;
+  style?: ArcResponseStyle;
   privacyMode?: 'strict' | 'guarded' | 'relaxed';
+  vaultContext?: string;
   signal?: AbortSignal;
   onStep?: (step: string) => void;
   onChunk?: (chunk: string) => void;
@@ -513,29 +557,52 @@ export async function streamChatMessage(
   history: ChatMessage[] = [],
   options: StreamChatOptions = {}
 ): Promise<void> {
-  const { model, provider, modelId, responseStyle, privacyMode, signal, onStep, onChunk, onDone, onError } = options;
+  const { model, provider, modelId, responseStyle, style, privacyMode, vaultContext, signal, onStep, onChunk, onDone, onError } = options;
+  const resolvedStyle: ArcResponseStyle =
+    style ||
+    (responseStyle === 'guided' || responseStyle === 'natural' || responseStyle === 'concise' || responseStyle === 'engineer' || responseStyle === 'academic'
+      ? (responseStyle as ArcResponseStyle)
+      : 'academic');
+
+  const resolvedProvider =
+    provider ||
+    (model?.startsWith('gemini')
+      ? 'Google Gemini'
+      : model === 'openai-gateway'
+      ? 'OpenAI Gateway'
+      : undefined);
 
   try {
-    const response = await fetch('/api/chat/stream', {
+    const response = await fetch('/api/chat', {
       method: 'POST',
       signal,
       headers: getAuthHeaders({
         'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
       }),
       body: JSON.stringify({
         message,
         history,
         model: model || undefined,
-        provider: provider || undefined,
+        provider: resolvedProvider,
         model_id: modelId || undefined,
         response_style: responseStyle || undefined,
+        style: resolvedStyle,
         privacy_mode: privacyMode || undefined,
+        stream: true,
+        vault_context: vaultContext,
       }),
     });
 
     if (!response.ok || !response.body) {
-      // Fallback to standard chat endpoint if streaming fails
-      const fallbackRes = await sendChatMessage(message, history, model, provider, modelId);
+      // If 4xx (client error), do not fire duplicate POST fallback: throw immediately
+      if (response.status >= 400 && response.status < 500) {
+        const errJson = await response.json().catch(() => null);
+        const errMsg = errJson?.error || errJson?.message || `Request failed with status ${response.status}`;
+        throw new Error(errMsg);
+      }
+      // Fallback to standard chat endpoint if streaming fails due to server/stream issues
+      const fallbackRes = await sendChatMessage(message, history, model, provider, modelId, privacyMode, resolvedStyle, vaultContext);
       onChunk?.(fallbackRes.answer);
       onDone?.(fallbackRes);
       return;
@@ -545,54 +612,77 @@ export async function streamChatMessage(
     const decoder = new TextDecoder('utf-8');
     let buffer = '';
 
+    const processSseBlock = (block: string) => {
+      if (!block.trim()) return;
+
+      let eventType = 'message';
+      let dataStr = '';
+
+      const subLines = block.split('\n');
+      for (const sub of subLines) {
+        if (sub.startsWith('event:')) {
+          eventType = sub.replace('event:', '').trim();
+        } else if (sub.startsWith('data:')) {
+          dataStr = sub.replace('data:', '').trim();
+        }
+      }
+
+      if (!dataStr) return;
+
+      let parsed: Record<string, any>;
+      try {
+        parsed = JSON.parse(dataStr);
+      } catch {
+        // ignore malformed non-JSON SSE line
+        return;
+      }
+
+      if (eventType === 'step' && parsed?.step) {
+        onStep?.(parsed.step);
+      } else if (eventType === 'chunk' && parsed?.chunk) {
+        onChunk?.(parsed.chunk);
+      } else if (eventType === 'error') {
+        const err = new Error(parsed?.message || parsed?.answer || 'Stream error');
+        if (onError) {
+          onError(err);
+          return;
+        }
+        throw err;
+      } else if (eventType === 'done') {
+        const chatRes: ChatResponse = {
+          answer: parsed?.answer || '',
+          provider: parsed?.provider || 'ARC Core',
+          model_id: parsed?.model_id || 'arc-auto',
+          status: parsed?.status || 'success',
+          error_type: parsed?.error_type || null,
+          fallback_used: parsed?.fallback_used ?? false,
+          attempts: parsed?.attempts ?? 1,
+        };
+        onDone?.(chatRes);
+      }
+    };
+
     while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
+      if (done) {
+        buffer += decoder.decode();
+        break;
+      }
 
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n\n');
       buffer = lines.pop() || '';
 
       for (const line of lines) {
-        if (!line.trim()) continue;
+        processSseBlock(line);
+      }
+    }
 
-        let eventType = 'message';
-        let dataStr = '';
-
-        const subLines = line.split('\n');
-        for (const sub of subLines) {
-          if (sub.startsWith('event:')) {
-            eventType = sub.replace('event:', '').trim();
-          } else if (sub.startsWith('data:')) {
-            dataStr = sub.replace('data:', '').trim();
-          }
-        }
-
-        if (!dataStr) continue;
-
-        try {
-          const parsed = JSON.parse(dataStr);
-          if (eventType === 'step' && parsed.step) {
-            onStep?.(parsed.step);
-          } else if (eventType === 'chunk' && parsed.chunk) {
-            onChunk?.(parsed.chunk);
-          } else if (eventType === 'error' && onError) {
-            onError(new Error(parsed.message || 'Stream error'));
-          } else if (eventType === 'done') {
-            const chatRes: ChatResponse = {
-              answer: parsed.answer || '',
-              provider: parsed.provider || 'J.A.R.V.I.S. Core',
-              model_id: parsed.model_id || 'jarvis-auto',
-              status: parsed.status || 'success',
-              error_type: parsed.error_type || null,
-              fallback_used: parsed.fallback_used ?? false,
-              attempts: parsed.attempts ?? 1,
-            };
-            onDone?.(chatRes);
-          }
-        } catch {
-          // ignore malformed SSE line
-        }
+    // Process any remaining tail block in buffer after stream ends
+    if (buffer.trim()) {
+      const remainingLines = buffer.split('\n\n');
+      for (const line of remainingLines) {
+        processSseBlock(line);
       }
     }
   } catch (err: unknown) {
@@ -607,94 +697,7 @@ export async function streamChatMessage(
   }
 }
 
-export interface ServiceStatus {
-  name: string;
-  provider: string;
-  status: 'online' | 'offline' | 'standby';
-  type: string;
-  active: boolean;
-  items_indexed?: number;
-  model?: string;
-  voice?: string;
-}
 
-export interface SystemTelemetry {
-  cpu_percent: number | null;
-  ram_percent: number | null;
-  ram_used_gb: number | null;
-  ram_total_gb: number | null;
-  disk_percent: number | null;
-  disk_used_gb: number | null;
-  disk_total_gb: number | null;
-  network_status: string;
-  uptime_seconds: number;
-  services: Record<string, ServiceStatus>;
-  all_operational: boolean;
-}
-
-export interface ActiveTask {
-  id: string;
-  title: string;
-  branch: string;
-  progress: number;
-  status: string;
-  eta_seconds?: number;
-}
-
-export interface ApprovalItem {
-  id: string;
-  title: string;
-  description: string;
-  risk_level: 'low' | 'medium' | 'high';
-  action: string;
-  status: string;
-  created_at: number;
-}
-
-export interface OperationsState {
-  emergency_stop: boolean;
-  auto_approve: boolean;
-  tasks: ActiveTask[];
-  approvals: ApprovalItem[];
-  recent_activity: Array<{ id: string; title: string; timestamp: string; status: string; result?: string }>;
-  right_now: {
-    recommendation: string;
-    branch: string;
-    topic: string;
-    urgency: string;
-  };
-}
-
-export async function fetchSystemTelemetry(): Promise<SystemTelemetry> {
-  const res = await fetch('/api/system/telemetry');
-  if (!res.ok) throw new Error('Failed to fetch system telemetry');
-  return res.json();
-}
-
-export async function fetchOperations(): Promise<OperationsState> {
-  const res = await fetch('/api/operations');
-  if (!res.ok) throw new Error('Failed to fetch operations');
-  return res.json();
-}
-
-export async function submitDecision(opId: string, decision: 'approve' | 'decline'): Promise<void> {
-  const res = await fetch(`/api/operations/${opId}/decision`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ decision }),
-  });
-  if (!res.ok) throw new Error('Failed to record decision');
-}
-
-export async function triggerEmergencyStop(): Promise<void> {
-  const res = await fetch('/api/operations/emergency-stop', { method: 'POST' });
-  if (!res.ok) throw new Error('Failed to trigger emergency stop');
-}
-
-export async function resetOperations(): Promise<void> {
-  const res = await fetch('/api/operations/reset', { method: 'POST' });
-  if (!res.ok) throw new Error('Failed to reset operations');
-}
 
 export interface VoicePersona {
   id: string;

@@ -1,22 +1,26 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
-  Archive,
+  Layers,
   Trash2,
-  FolderOpen,
   Loader2,
   Camera,
   MessageSquare,
   BookmarkPlus,
-  ShieldAlert,
   Clock,
   UserCheck,
+  UploadCloud,
+  FileText,
+  AlertCircle,
+  CheckCircle2,
 } from 'lucide-react';
 import {
   fetchVaultSessions,
   fetchSessionDetail,
   saveCurrentSession,
   deleteVaultSession,
+  ingestVaultDocument,
   type SessionSummary,
   type SessionDetail,
   type OperatorUser,
@@ -36,6 +40,8 @@ export interface VaultDrawerProps {
   }) => void;
   onOpenAuthModal: () => void;
   onSessionsChange?: (count: number) => void;
+  vaultConceptsCount?: number;
+  onConceptsChange?: (newCount: number) => void;
 }
 
 function formatRelativeTime(isoString: string): string {
@@ -65,13 +71,17 @@ export const VaultDrawer: React.FC<VaultDrawerProps> = ({
   onRestoreSession,
   onOpenAuthModal,
   onSessionsChange,
+  vaultConceptsCount = 0,
+  onConceptsChange,
 }) => {
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+  const [uploadSuccessMsg, setUploadSuccessMsg] = useState<string | null>(null);
   const [actionSessionId, setActionSessionId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const drawerRef = useRef<HTMLDivElement>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
 
   const loadSessions = useCallback(async () => {
     if (!currentUser) {
@@ -123,8 +133,24 @@ export const VaultDrawer: React.FC<VaultDrawerProps> = ({
     setIsSaving(true);
     setErrorMessage(null);
     try {
+      let persistentDutImage: string | null = currentDutImage;
+      if (currentDutImage && currentDutImage.startsWith('blob:')) {
+        try {
+          const res = await fetch(currentDutImage);
+          const blob = await res.blob();
+          persistentDutImage = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        } catch {
+          persistentDutImage = null;
+        }
+      }
+
       const saved: SessionDetail = await saveCurrentSession({
-        dut_image: currentDutImage,
+        dut_image: persistentDutImage,
         messages: currentMessages.map((m) => ({
           id: m.id,
           role: m.role,
@@ -134,7 +160,6 @@ export const VaultDrawer: React.FC<VaultDrawerProps> = ({
       });
       await loadSessions();
       setErrorMessage(null);
-      // Brief feedback
       setActionSessionId(saved.id);
       setTimeout(() => setActionSessionId(null), 2000);
     } catch (err: unknown) {
@@ -144,35 +169,24 @@ export const VaultDrawer: React.FC<VaultDrawerProps> = ({
     }
   };
 
-  const handleLoadSession = async (sessionSummary: SessionSummary) => {
-    setActionSessionId(sessionSummary.id);
+  const handleLoadSession = async (sess: SessionSummary) => {
+    setActionSessionId(sess.id);
     setErrorMessage(null);
     try {
-      const detail = await fetchSessionDetail(sessionSummary.id);
-      const restoredMessages: DisplayMessage[] = detail.messages.map((m, idx) => ({
-        id: m.id || `restored-${idx}-${Date.now()}`,
-        role: m.role,
-        content: m.content,
-        metadata:
-          m.metadata?.provider && m.metadata?.model_id
-            ? {
-                provider: m.metadata.provider,
-                model_id: m.metadata.model_id,
-                attempts: typeof m.metadata.attempts === 'number' ? m.metadata.attempts : 1,
-                fallback_used: Boolean(m.metadata.fallback_used),
-                original_model: typeof m.metadata.original_model === 'string' ? m.metadata.original_model : null,
-              }
-            : undefined,
-      }));
-
+      const detail = await fetchSessionDetail(sess.id);
       onRestoreSession({
-        messages: restoredMessages,
+        messages: detail.messages.map((m, idx) => ({
+          id: m.id || `restored-${idx}`,
+          role: m.role,
+          content: m.content,
+          metadata: m.metadata as DisplayMessage['metadata'],
+        })),
         dutImage: detail.dut_image,
         sessionId: detail.id,
       });
       onClose();
     } catch (err: unknown) {
-      setErrorMessage(err instanceof Error ? err.message : 'Failed to load session detail.');
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to load session details.');
     } finally {
       setActionSessionId(null);
     }
@@ -180,10 +194,7 @@ export const VaultDrawer: React.FC<VaultDrawerProps> = ({
 
   const handleDeleteSession = async (e: React.MouseEvent, sessionId: string) => {
     e.stopPropagation();
-    if (!window.confirm('Are you sure you want to delete this archived session?')) {
-      return;
-    }
-
+    if (!window.confirm('Delete this archived study session?')) return;
     setActionSessionId(sessionId);
     setErrorMessage(null);
     try {
@@ -198,208 +209,283 @@ export const VaultDrawer: React.FC<VaultDrawerProps> = ({
     }
   };
 
-  if (!isOpen) return null;
+  const handleDocUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingDoc(true);
+    setErrorMessage(null);
+    setUploadSuccessMsg(null);
+    try {
+      const res = await ingestVaultDocument(file);
+      setUploadSuccessMsg(`Indexed ${file.name} (+${res.chunks_indexed} chunks)`);
+      if (onConceptsChange) {
+        onConceptsChange(vaultConceptsCount + res.chunks_indexed);
+      }
+      setTimeout(() => setUploadSuccessMsg(null), 3000);
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to ingest document.');
+    } finally {
+      setIsUploadingDoc(false);
+      e.target.value = '';
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      {/* Dimmed backdrop */}
-      <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-fade-in"
-        onClick={onClose}
-      />
-
-      {/* Slide-out Pitch-Carbon Drawer */}
-      <div
-        ref={drawerRef}
-        className="relative z-10 w-full sm:w-[420px] h-full bg-slate-950/95 backdrop-blur-2xl border-l border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col text-slate-100 animate-drawer-slide"
-      >
-        {/* Top Header */}
-        <div className="px-5 py-4 border-b border-white/[0.08] flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/25 flex items-center justify-center text-cyan-400">
-              <Archive className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-xs font-mono font-bold tracking-wider uppercase text-cyan-300">
-                  Saved Sessions
-                </h2>
-                {currentUser && (
-                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-white/[0.04] border border-white/[0.08] text-slate-400">
-                    {sessions.length} SAVED
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] text-slate-400 font-mono">
-                Your saved circuit sessions
-              </p>
-            </div>
-          </div>
-
-          <button
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end select-none">
+          {/* Dimmed backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
             onClick={onClose}
-            type="button"
-            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-            title="Close"
+          />
+
+          {/* Slide-over Knowledge Vault Drawer */}
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            className="relative z-10 w-full sm:w-[440px] h-full bg-[#0B0D1D]/85 backdrop-blur-2xl [-webkit-backdrop-filter:blur(24px)] border-l border-white/[0.10] shadow-drawer flex flex-col text-[#F4F6FB]"
           >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 diagnostic-feed-scrollbar">
-          {errorMessage && (
-            <div className="p-2.5 rounded-xl bg-rose-950/60 border border-rose-800/60 text-rose-300 text-xs font-mono flex items-center gap-2">
-              <ShieldAlert className="w-4 h-4 text-rose-400 flex-shrink-0" />
-              <span className="truncate">{errorMessage}</span>
-            </div>
-          )}
-
-          {!currentUser ? (
-            /* Guest Mode Teaser Card */
-            <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] flex flex-col items-center text-center gap-3 my-auto">
-              <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shadow-[0_0_16px_rgba(6,182,212,0.1)]">
-                <UserCheck className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-200">
-                  Sign In to Save Sessions
-                </h3>
-                <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                  Sign in to save your circuit conversations, uploaded photos, and review past sessions.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  onOpenAuthModal();
-                }}
-                className="mt-2 w-full py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-mono text-xs uppercase tracking-wider font-semibold transition-all active:scale-[0.98] shadow-lg shadow-cyan-950/50"
-              >
-                Sign In / Register
-              </button>
-            </div>
-          ) : (
-            <>
-              {/* Archive Current Session Button */}
-              <button
-                type="button"
-                onClick={handleArchiveCurrent}
-                disabled={isSaving || (currentMessages.length === 0 && !currentDutImage)}
-                className={`w-full p-3 rounded-xl border font-mono text-xs flex items-center justify-between transition-all active:scale-[0.99] ${
-                  currentMessages.length > 0 || currentDutImage
-                    ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20 hover:border-cyan-500/50 shadow-[0_0_12px_rgba(6,182,212,0.1)]'
-                    : 'bg-white/[0.02] border-white/[0.06] text-slate-500 cursor-not-allowed'
-                }`}
-                title="Save current circuit session"
-              >
-                <div className="flex items-center gap-2">
-                  {isSaving ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
-                  ) : (
-                    <BookmarkPlus className="w-4 h-4 text-cyan-400" />
-                  )}
-                  <span className="font-semibold uppercase tracking-wider">
-                    {isSaving ? 'SAVING SESSION...' : 'SAVE CURRENT SESSION'}
-                  </span>
+            {/* Header */}
+            <div className="px-4 sm:px-5 py-3.5 sm:py-4 border-b border-white/[0.08] bg-white/[0.02] flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.10] backdrop-blur-md flex items-center justify-center text-[#2B3BFF] shrink-0">
+                  <Layers className="w-4 h-4" />
                 </div>
-                <span className="text-[10px] text-slate-400">
-                  {currentMessages.length} msgs
-                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                    <h2 className="text-xs font-mono font-bold tracking-wider uppercase text-[#F4F6FB] truncate">
+                      Knowledge Vault
+                    </h2>
+                    {vaultConceptsCount > 0 && (
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.10] text-[#35FEE4] font-semibold shrink-0">
+                        {vaultConceptsCount} CHUNKS
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-[#94A3B8] font-mono truncate">
+                    Documents & session context
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={onClose}
+                type="button"
+                className="p-2 rounded-lg text-[#94A3B8] hover:text-[#F4F6FB] bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.07] hover:border-white/[0.14] transition-all duration-150 min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer focus-visible:ring-2 focus-visible:ring-[#2B3BFF] focus-visible:outline-none shrink-0"
+                title="Close drawer (Esc)"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Document Ingestion Quick Zone */}
+            <div className="p-4 border-b border-white/[0.08] bg-white/[0.015]">
+              <input
+                id="vault-document-upload-input"
+                name="vault-doc"
+                type="file"
+                ref={docInputRef}
+                onChange={handleDocUpload}
+                accept="application/pdf,text/plain,text/markdown,.pdf,.txt,.md"
+                aria-label="Upload document to Knowledge Vault"
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => docInputRef.current?.click()}
+                disabled={isUploadingDoc}
+                className="w-full p-3 rounded-xl border border-dashed border-white/[0.12] hover:border-white/[0.25] bg-white/[0.03] hover:bg-white/[0.07] backdrop-blur-md transition-all flex items-center justify-center gap-2.5 text-xs font-mono text-[#94A3B8] hover:text-[#35FEE4] cursor-pointer focus-visible:ring-2 focus-visible:ring-[#2B3BFF] focus-visible:outline-none"
+              >
+                {isUploadingDoc ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-[#35FEE4]" />
+                    <span className="text-[#35FEE4]">Indexing document into vault…</span>
+                  </>
+                ) : (
+                  <>
+                    <UploadCloud className="w-4 h-4 text-[#2B3BFF]" />
+                    <span>Upload & index document (.PDF, .TXT, .MD)</span>
+                  </>
+                )}
               </button>
 
-              {/* Sessions List */}
-              <div className="flex flex-col gap-2">
-                <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider px-1">
-                  Saved Sessions
-                </span>
+              {uploadSuccessMsg && (
+                <div className="mt-2 text-[11px] font-mono text-[#35FEE4] bg-emerald-950/40 border border-emerald-800/50 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#35FEE4]" />
+                  <span>{uploadSuccessMsg}</span>
+                </div>
+              )}
+            </div>
 
-                {isLoading ? (
-                  <div className="flex flex-col items-center justify-center py-12 gap-2 text-slate-500 font-mono text-xs">
-                    <Loader2 className="w-5 h-5 animate-spin text-cyan-400" />
-                    <span>Loading saved sessions...</span>
+            {/* Content Body: Sessions & Management */}
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 diagnostic-feed-scrollbar">
+              {errorMessage && (
+                <div className="p-2.5 rounded-xl bg-rose-950/40 border border-rose-800/50 text-rose-300 text-xs font-mono flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+                  <span className="min-w-0 flex-1 break-words [overflow-wrap:anywhere] leading-normal">{errorMessage}</span>
+                </div>
+              )}
+
+              {!currentUser ? (
+                /* Guest Mode Card */
+                <div className="p-5 rounded-2xl bg-white/[0.035] backdrop-blur-md border border-white/[0.09] flex flex-col items-center text-center gap-3 my-auto shadow-card">
+                  <div className="w-12 h-12 rounded-xl bg-white/[0.04] border border-white/[0.10] flex items-center justify-center text-[#35FEE4]">
+                    <UserCheck className="w-6 h-6" />
                   </div>
-                ) : sessions.length === 0 ? (
-                  <div className="p-8 rounded-2xl bg-white/[0.02] border border-white/[0.04] flex flex-col items-center text-center gap-2.5 my-6">
-                    <Archive className="w-8 h-8 text-slate-600" />
-                    <span className="text-xs font-mono font-medium text-slate-300 uppercase">
-                      No Saved Sessions
-                    </span>
-                    <p className="text-[11px] text-slate-500 max-w-[240px]">
-                      No saved sessions found. Ask questions or upload a photo, then click &quot;Save Current Session&quot;.
+                  <div>
+                    <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-[#F4F6FB]">
+                      Sign In to Sync Sessions
+                    </h3>
+                    <p className="text-[11px] text-[#94A3B8] mt-1 leading-relaxed">
+                      Authenticate to archive study notes, problem sets, diagrams, and recall past multi-turn learning sessions.
                     </p>
                   </div>
-                ) : (
-                  sessions.map((sess) => {
-                    const isBusy = actionSessionId === sess.id;
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenAuthModal();
+                    }}
+                    className="mt-2 w-full py-2 rounded-xl bg-gradient-to-r from-[#4F5DFF]/25 via-[#7C88FF]/20 to-[#35FEE4]/25 hover:from-[#4F5DFF]/35 hover:to-[#35FEE4]/35 active:scale-[0.98] text-[#F4F6FB] font-mono text-xs uppercase tracking-wider font-semibold transition-all backdrop-blur-xl border border-white/[0.18] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.15)] cursor-pointer focus-visible:ring-2 focus-visible:ring-[#2B3BFF] focus-visible:outline-none"
+                  >
+                    Sign In / Register
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {/* Archive Current Session Button */}
+                  <button
+                    type="button"
+                    onClick={handleArchiveCurrent}
+                    disabled={isSaving || (currentMessages.length === 0 && !currentDutImage)}
+                    className={`w-full p-3 rounded-xl border font-mono text-xs flex items-center justify-between transition-all duration-150 focus-visible:ring-2 focus-visible:ring-[#2B3BFF] focus-visible:outline-none ${
+                      currentMessages.length > 0 || currentDutImage
+                        ? 'bg-white/[0.05] hover:bg-white/[0.09] backdrop-blur-md border-white/[0.12] hover:border-white/[0.20] text-[#F4F6FB] cursor-pointer shadow-xs'
+                        : 'bg-white/[0.02] border-white/[0.06] text-[#64748B] cursor-not-allowed'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      {isSaving ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-[#35FEE4]" />
+                      ) : (
+                        <BookmarkPlus className="w-4 h-4 text-[#2B3BFF]" />
+                      )}
+                      <span className="font-semibold uppercase tracking-wider">
+                        {isSaving ? 'SAVING SESSION...' : 'SAVE CURRENT SESSION'}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-[#94A3B8] flex items-center gap-1">
+                      {currentDutImage && <Camera className="w-2.5 h-2.5 text-[#35FEE4]" />}
+                      {currentMessages.length} msgs
+                    </span>
+                  </button>
 
-                    return (
-                      <div
-                        key={sess.id}
-                        onClick={() => handleLoadSession(sess)}
-                        className="group p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.06] hover:border-cyan-500/40 transition-all cursor-pointer flex flex-col gap-2 relative shadow-sm"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <h4 className="text-xs font-medium text-slate-200 group-hover:text-cyan-300 transition-colors line-clamp-1 font-mono">
-                            {sess.title}
-                          </h4>
-                          <button
-                            type="button"
-                            onClick={(e) => handleDeleteSession(e, sess.id)}
-                            className="text-slate-500 hover:text-rose-400 p-1 rounded hover:bg-white/[0.06] transition-colors"
-                            title="Delete Archived Run"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                  {/* Sessions List */}
+                  <div className="flex flex-col gap-2">
+                    <span className="text-[10px] font-mono text-[#64748B] uppercase tracking-wider px-1">
+                      SAVED SESSIONS ({sessions.length})
+                    </span>
 
-                        <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
-                          <div className="flex items-center gap-2">
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3 text-slate-500" />
-                              {formatRelativeTime(sess.updated_at)}
-                            </span>
-                            <span className="flex items-center gap-1 bg-white/[0.04] px-1.5 py-0.5 rounded text-slate-300">
-                              <MessageSquare className="w-2.5 h-2.5 text-cyan-400" />
-                              {sess.message_count}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-1.5">
-                            {sess.has_dut && (
-                              <span className="flex items-center gap-1 text-[9px] font-semibold text-cyan-300 bg-cyan-950/60 border border-cyan-500/30 px-1.5 py-0.5 rounded">
-                                <Camera className="w-2.5 h-2.5" />
-                                SCOPE
-                              </span>
-                            )}
-                            <span className="text-[10px] text-cyan-400 group-hover:underline flex items-center gap-0.5">
-                              {isBusy ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : (
-                                <>
-                                  <FolderOpen className="w-3 h-3" />
-                                  <span>LOAD</span>
-                                </>
-                              )}
-                            </span>
-                          </div>
-                        </div>
+                    {isLoading ? (
+                      <div className="flex flex-col items-center justify-center py-12 gap-2 text-[#64748B] font-mono text-xs">
+                        <Loader2 className="w-5 h-5 animate-spin text-[#2B3BFF]" />
+                        <span>Loading saved sessions...</span>
                       </div>
-                    );
-                  })
-                )}
-              </div>
-            </>
-          )}
-        </div>
+                    ) : sessions.length === 0 ? (
+                      <div className="p-8 rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.08] flex flex-col items-center text-center gap-2.5 my-6">
+                        <FileText className="w-8 h-8 text-[#64748B]" />
+                        <span className="text-xs font-mono font-medium text-[#F4F6FB] uppercase">
+                          No Saved Sessions
+                        </span>
+                        <p className="text-[11px] text-[#94A3B8] max-w-[240px]">
+                          Complete an analysis, then click &ldquo;Save Current Session&rdquo; to store it in your workspace.
+                        </p>
+                      </div>
+                    ) : (
+                      sessions.map((sess) => {
+                        const isBusy = actionSessionId === sess.id;
+                        return (
+                          <div
+                            key={sess.id}
+                            tabIndex={0}
+                            role="button"
+                            aria-label={`Restore session: ${sess.title || 'Untitled Session'}`}
+                            onClick={() => handleLoadSession(sess)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                handleLoadSession(sess);
+                              }
+                            }}
+                            className="group p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] backdrop-blur-md border border-white/[0.08] hover:border-white/[0.16] transition-all duration-150 cursor-pointer flex flex-col gap-2 shadow-xs focus-visible:ring-2 focus-visible:ring-[#2B3BFF] focus-visible:outline-none"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <h4 className="text-xs font-medium text-[#F4F6FB] group-hover:text-[#35FEE4] transition-colors line-clamp-1 font-mono">
+                                {sess.title}
+                              </h4>
+                              <button
+                                type="button"
+                                onClick={(e) => handleDeleteSession(e, sess.id)}
+                                className="text-[#64748B] hover:text-rose-400 p-1 rounded hover:bg-rose-950/40 transition-colors"
+                                title="Delete archived session"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
 
-        {/* Footer */}
-        <div className="p-3 border-t border-white/[0.08] text-[10px] font-mono text-slate-500 flex items-center justify-between">
-          <span>CircuitSnap</span>
-          <span className="text-cyan-400">Saved locally</span>
+                            <div className="flex items-center justify-between text-[10px] font-mono text-[#64748B]">
+                              <div className="flex items-center gap-2">
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3 text-[#64748B]" />
+                                  <span>{formatRelativeTime(sess.updated_at)}</span>
+                                </span>
+                                <span className="flex items-center gap-1 bg-white/[0.04] px-1.5 py-0.5 rounded text-[#94A3B8] border border-white/[0.08]">
+                                  <MessageSquare className="w-2.5 h-2.5 text-[#2B3BFF]" />
+                                  {sess.message_count}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-1.5">
+                                {sess.has_dut && (
+                                  <span className="flex items-center gap-1 text-[9px] font-semibold text-[#35FEE4] bg-[#35FEE4]/10 border border-[#35FEE4]/25 px-1.5 py-0.5 rounded">
+                                    <Camera className="w-2.5 h-2.5" />
+                                    SCOPE
+                                  </span>
+                                )}
+                                <span className="text-[10px] text-[#35FEE4] group-hover:underline flex items-center gap-0.5">
+                                  {isBusy ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <span>Restore →</span>
+                                  )}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 py-3 border-t border-white/[0.08] text-[10px] font-mono text-[#64748B] flex items-center justify-between bg-white/[0.02] flex-shrink-0">
+              <span>ARC Knowledge Subsystem</span>
+              <span className="text-[#35FEE4]">Synced Locally</span>
+            </div>
+          </motion.div>
         </div>
-      </div>
-    </div>
+      )}
+    </AnimatePresence>
   );
 };

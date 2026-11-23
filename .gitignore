@@ -24,4 +24,11 @@ Thumbs.db
 *.sqlite3
 *.db-journal
 *.db-wal
-*.db-shm
+*.db-shm
+
+# Node / Frontend
+node_modules/
+frontend/dist/
+
+# Prompt references (local design documentation)
+.arc-prompts/

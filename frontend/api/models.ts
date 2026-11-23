@@ -1,0 +1,11 @@
+import type { ExtendedRequest, ExtendedResponse } from './_lib/http.ts';
+import { sendJson } from './_lib/http.ts';
+import { getAvailableModelsList } from './_lib/provider.ts';
+
+export default async function handler(_req: ExtendedRequest, res: ExtendedResponse) {
+  const models = getAvailableModelsList();
+  sendJson(res, 200, {
+    models,
+    default_model: models[0]?.id || 'auto',
+  });
+}

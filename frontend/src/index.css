@@ -1,431 +1,516 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Inter', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  --font-display: 'Plus Jakarta Sans', var(--font-sans);
+
+  /* Deep Obsidian Design System Palette */
+  --color-obsidian-canvas: #05060F;
+  --color-obsidian-surface-1: #0B0D1D;
+  --color-obsidian-surface-2: #10132A;
+  --color-obsidian-border: #1B2042;
+  --color-electric-indigo: #2B3BFF;
+  --color-tropical-mint: #35FEE4;
 }
 
+/* ==========================================================================
+   ARC — High-Craft Multi-Discipline Engineering Design System
+   "Deep Obsidian" Theme: #05060F base canvas, elevated surfaces #0B0D1D/#10132A,
+   crisp 1px borders #1B2042 / rgba(43,59,255,0.22), Electric Indigo #2B3BFF accent,
+   Tropical Mint #35FEE4 telemetry, and #F4F6FB / #94A3B8 / #64748B text hierarchy.
+   ========================================================================== */
+
 :root {
-  --ease-spring-snappy: linear(
-    0, 0.006, 0.025 2.8%, 0.101 6.1%, 0.539 18.9%, 0.721 25.3%, 0.849 31.5%,
-    0.937 38.1%, 0.968 41.8%, 0.991 45.7%, 1.007 50.1%, 1.015 55%, 1.015 60.7%,
-    1.001 72.8%, 0.998 80.8%, 1
-  );
-  --ease-spring-float: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
-  --font-display: 'Space Grotesk', var(--font-sans);
-  --cerulean: #00A6E8;
-  --neon-rose: #FF2D95;
+  /* —— Canvas & Elevated Surfaces —— */
+  --canvas-bg: #05060F;
+  --surface-card: #0B0D1D;
+  --surface-subtle: #0E1124;
+  --surface-muted: #10132A;
+  --surface-hover: #161A38;
+
+  /* —— Crisp 1px Borders —— */
+  --border-subtle: rgba(43, 59, 255, 0.16);
+  --border-default: #1B2042;
+  --border-hover: rgba(43, 59, 255, 0.35);
+  --border-strong: rgba(43, 59, 255, 0.50);
+
+  /* —— Electric Indigo Primary Accent (#2B3BFF) —— */
+  --cobalt-50: #0E1238;
+  --cobalt-100: #141A4D;
+  --cobalt-200: #1B2366;
+  --cobalt-500: #2B3BFF;
+  --cobalt-600: #222ECF;
+  --cobalt-700: #19219E;
+
+  /* —— Precision Telemetry Mint (#35FEE4) —— */
+  --telemetry-mint: #35FEE4;
+  --telemetry-dim: #22C4AF;
+  --telemetry-glow: rgba(53, 254, 228, 0.30);
+  --telemetry-bg: rgba(53, 254, 228, 0.10);
+
+  /* —— Typography Hierarchy —— */
+  --text-heading: #F4F6FB;
+  --text-body: #F4F6FB;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --text-subtle: #475569;
+
+  /* —— Compatibility Variables for Legacy Helpers —— */
+  --color-void-950: #05060F;
+  --color-void-900: #080A16;
+  --color-surface-1: #0B0D1D;
+  --color-surface-2: #10132A;
+  --color-surface-3: #161A38;
+  --color-surface-4: #1F244D;
+
+  --color-border-subtle: rgba(43, 59, 255, 0.16);
+  --color-border-default: #1B2042;
+  --color-border-strong: rgba(43, 59, 255, 0.35);
+
+  --color-primary-500: #2B3BFF;
+  --color-primary-400: #4B5BFF;
+  --color-primary-300: #6E7BFF;
+  --color-primary-600: #222ECF;
+  --color-primary-glow: rgba(43, 59, 255, 0.45);
+
+  --color-accent-warm: #D97706;
+  --color-accent-warm-dim: #B45309;
+
+  --color-danger-500: #DC2626;
+  --color-danger-400: #EF4444;
+
+  --color-success-500: #059669;
+
+  --color-text-primary: #F4F6FB;
+  --color-text-secondary: #94A3B8;
+  --color-text-tertiary: #64748B;
+  --color-text-inverse: #05060F;
+
+  /* —— Fast, Purposeful Motion (150ms–220ms, smooth ease-out) —— */
+  --ease-out-arc: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 180ms;
+  --duration-settle: 220ms;
+
+  /* —— Multi-Stop Depth on Deep Obsidian —— */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.45);
+  --shadow-card: 0 2px 8px 0 rgba(0, 0, 0, 0.50), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+  --shadow-elevated: 0 6px 20px -2px rgba(0, 0, 0, 0.65), 0 2px 6px -1px rgba(43, 59, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.07);
+  --shadow-workbench: 0 12px 36px -4px rgba(0, 0, 0, 0.80), 0 4px 12px -2px rgba(43, 59, 255, 0.20);
+  --shadow-drawer: -6px 0 32px 0 rgba(0, 0, 0, 0.85);
+}
+
+/* ==========================================================================
+   Base Canvas Rules
+   ========================================================================== */
+
+html, body {
+  background-color: #05060F;
+  color: #F4F6FB;
   font-family: var(--font-sans);
-  color: #f3f4f6;
-  background-color: #060911;
-  font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-* {
-  box-sizing: border-box;
+/* Architectural Coordinate Dot Overlay (Translucent Electric Indigo on Obsidian) */
+.arc-dot-grid {
+  background-color: transparent;
+  background-image: radial-gradient(rgba(43, 59, 255, 0.20) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: 'Space Grotesk', var(--font-sans);
-  letter-spacing: -0.015em;
+/* Crisp Frosted Glass Surfaces (Neutral Dark Frosted Glass Standard) */
+.arc-glass-surface {
+  background-color: rgba(255, 255, 255, 0.035);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.45), inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
 }
 
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  background-color: #060911;
-  color: #f3f4f6;
-  font-family: var(--font-sans);
-  background:
-    radial-gradient(circle at 10% 0%, rgba(0, 166, 232, 0.16) 0%, transparent 45%),
-    radial-gradient(circle at 90% 100%, rgba(255, 45, 149, 0.13) 0%, transparent 50%),
-    radial-gradient(rgba(0, 166, 232, 0.11) 1px, transparent 1px),
-    #060911;
-  background-size: 100% 100%, 100% 100%, 24px 24px, 100% 100%;
-  background-attachment: fixed;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+.arc-glass-card {
+  background-color: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.55), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  transition: border-color 150ms var(--ease-out-arc), box-shadow 150ms var(--ease-out-arc), background-color 150ms var(--ease-out-arc);
 }
 
-/* Lock the root document viewport so the app shell is a single scroll container.
-   Prevents the browser from scrolling the pinned TelemetryHeader off-screen or
-   pushing BottomCommandDock below the fold on mobile (390x738). */
-html,
-body,
-#root {
-  height: 100dvh;
-  max-height: 100dvh;
-  overflow: hidden;
-  margin: 0;
-  padding: 0;
+.arc-glass-card:hover {
+  background-color: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.65), inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
 }
 
-/* 24px Engineering Dot-Matrix Grid with Dual-Tone Atmospheric Diffusion */
-.bg-\[\#050811\] {
-  background-color: #060911;
-  background-image:
-    radial-gradient(circle at 12% 0%, rgba(0, 166, 232, 0.18) 0%, transparent 45%),
-    radial-gradient(circle at 90% 100%, rgba(255, 45, 149, 0.14) 0%, transparent 50%),
-    radial-gradient(rgba(0, 166, 232, 0.12) 1px, transparent 1px);
-  background-size: 100% 100%, 100% 100%, 24px 24px;
-  background-attachment: fixed;
+/* Multi-stop elevated card with specular highlight on Obsidian */
+.arc-card-elevated {
+  background-color: rgba(16, 19, 42, 0.92) !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid #1B2042 !important;
+  box-shadow: 0 6px 20px -2px rgba(0, 0, 0, 0.65), inset 0 1px 0 0 rgba(255, 255, 255, 0.07) !important;
+  transition: border-color 150ms var(--ease-out-arc), box-shadow 150ms var(--ease-out-arc);
 }
 
-/* Custom dark workbench scrollbar (5px width, rounded-full thumb) */
+.arc-card-elevated:hover {
+  border-color: rgba(43, 59, 255, 0.35) !important;
+  box-shadow: 0 8px 24px -2px rgba(0, 0, 0, 0.70), 0 0 16px rgba(43, 59, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.10) !important;
+}
+
+/* ==========================================================================
+   Single-Pill Confidence Badges (AST-level integration on Deep Obsidian)
+   ========================================================================== */
+
+.badge-success {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+  color: #34D399 !important;
+  border: 1px solid rgba(52, 211, 153, 0.35) !important;
+  font-weight: 600 !important;
+}
+
+.badge-warm {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+  color: #FBBF24 !important;
+  border: 1px solid rgba(251, 191, 36, 0.35) !important;
+  font-weight: 600 !important;
+}
+
+.badge-danger {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  color: #F87171 !important;
+  border: 1px solid rgba(248, 113, 113, 0.35) !important;
+  font-weight: 600 !important;
+}
+
+.badge-primary {
+  background-color: rgba(43, 59, 255, 0.18) !important;
+  color: #818CF8 !important;
+  border: 1px solid rgba(43, 59, 255, 0.35) !important;
+  font-weight: 600 !important;
+}
+
+.badge-neutral {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  color: #94A3B8 !important;
+  border: 1px solid #1B2042 !important;
+  font-weight: 500 !important;
+}
+
+.badge-telemetry {
+  background-color: rgba(53, 254, 228, 0.12) !important;
+  color: #35FEE4 !important;
+  border: 1px solid rgba(53, 254, 228, 0.32) !important;
+  font-weight: 600 !important;
+}
+
+/* ==========================================================================
+   KaTeX Mathematical Rendering Overrides
+   High contrast light text on Deep Obsidian with horizontal overflow handling
+   ========================================================================== */
+
+.katex {
+  color: #F4F6FB !important;
+  font-size: 1.05em !important;
+  text-rendering: auto !important;
+}
+
+.katex-html {
+  color: inherit !important;
+}
+
+.katex svg path {
+  fill: currentColor !important;
+}
+
+:not(.katex-display) > .katex {
+  display: inline-block !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  vertical-align: middle !important;
+  scrollbar-width: thin !important;
+}
+
+.katex-display {
+  display: block !important;
+  margin: 0.85rem 0 !important;
+  padding: 0.75rem 1rem !important;
+  background-color: #0B0D1D !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid #1B2042 !important;
+  border-left: 2px solid #2B3BFF !important;
+  border-radius: 0.625rem !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  text-align: center !important;
+  box-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.50), inset 0 1px 0 0 rgba(255, 255, 255, 0.05) !important;
+  transition: border-color 150ms var(--ease-out-arc);
+}
+
+.katex-display:hover {
+  border-color: rgba(43, 59, 255, 0.45) !important;
+}
+
+.katex-display > .katex {
+  display: inline-block !important;
+  text-align: initial !important;
+  color: #F4F6FB !important;
+}
+
+/* ==========================================================================
+   Clean Crisp Scrollbars on Obsidian Canvas
+   ========================================================================== */
+
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background-color: #1B2042;
   border-radius: 9999px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(6, 182, 212, 0.5);
-  box-shadow: 0 0 10px rgba(6, 182, 212, 0.4);
+  background-color: #2B3BFF;
 }
 
-/* Subtle dark scrollbar for Diagnostic Feed and scrollable panels */
 .diagnostic-feed-scrollbar {
-  scroll-behavior: smooth;
-}
-.diagnostic-feed-scrollbar::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
-.diagnostic-feed-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.diagnostic-feed-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 9999px;
-}
-.diagnostic-feed-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(6, 182, 212, 0.5);
-  box-shadow: 0 0 10px rgba(6, 182, 212, 0.4);
+  scrollbar-width: thin;
+  scrollbar-color: #1B2042 transparent;
 }
 
-/* Tactile Spring Physics (OriginOS Spec) */
-.tactile-spring {
-  transition: transform 260ms var(--ease-spring-snappy),
-              background-color 150ms ease,
-              border-color 150ms ease,
-              box-shadow 200ms ease;
-  will-change: transform;
-}
-.tactile-spring:hover:not(:disabled) {
-  transform: translateY(-1.5px);
-}
-.tactile-spring:active:not(:disabled) {
-  transform: scale(0.96);
-  transition-duration: 120ms;
+/* ==========================================================================
+   Markdown Prose, Code Blocks & Tables on Deep Obsidian
+   Eliminating light-mode remnants and delivering high visual craft
+   ========================================================================== */
+
+/* Prose paragraphs & list items */
+.arc-card-elevated p {
+  color: #F4F6FB !important;
 }
 
-/* Top-Edge Specular Glass Rim Lighting */
-.specular-glass {
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+.arc-card-elevated li {
+  color: #E2E8F0 !important;
 }
 
-/* Diagnostic Feed Message Entry Spring Settle */
-@keyframes message-settle {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.animate-message-settle {
-  animation: message-settle 360ms var(--ease-spring-snappy) forwards;
+.arc-card-elevated strong {
+  color: #FFFFFF !important;
+  font-weight: 600 !important;
 }
 
-/* Modal & Dropdown Spring Pop */
-@keyframes panel-pop {
-  from {
-    opacity: 0;
-    transform: scale(0.96) translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-.animate-panel-pop {
-  animation: panel-pop 260ms var(--ease-spring-snappy) forwards;
-  will-change: transform, opacity;
+.arc-card-elevated em {
+  color: #94A3B8 !important;
 }
 
-/* Drawer Spring Slide */
-@keyframes drawer-slide {
-  from {
-    opacity: 0;
-    transform: translateX(16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-.animate-drawer-slide {
-  animation: drawer-slide 300ms var(--ease-spring-snappy) forwards;
-  will-change: transform, opacity;
+.arc-card-elevated h1,
+.arc-card-elevated h2,
+.arc-card-elevated h3,
+.arc-card-elevated h4 {
+  color: #F4F6FB !important;
 }
 
-/* Voice Assistant Pulsing Aura & Waveform */
-@keyframes pulse-ring-cerulean {
-  0% {
-    box-shadow: 0 0 0 0 rgba(0, 166, 232, 0.7);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(0, 166, 232, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(0, 166, 232, 0);
-  }
-}
-.animate-pulse-ring-cerulean {
-  animation: pulse-ring-cerulean 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+/* Blockquotes */
+blockquote,
+.arc-card-elevated blockquote {
+  border-left: 3px solid #2B3BFF !important;
+  background-color: rgba(16, 19, 42, 0.70) !important;
+  color: #94A3B8 !important;
+  border-radius: 0 0.5rem 0.5rem 0 !important;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.04) !important;
 }
 
-@keyframes pulse-ring-rose {
-  0% {
-    box-shadow: 0 0 0 0 rgba(255, 45, 149, 0.75);
-  }
-  70% {
-    box-shadow: 0 0 0 12px rgba(255, 45, 149, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(255, 45, 149, 0);
-  }
-}
-.animate-pulse-ring-rose {
-  animation: pulse-ring-rose 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+/* Preformatted code blocks */
+pre,
+.arc-card-elevated pre {
+  background-color: #080A16 !important;
+  border: 1px solid #1B2042 !important;
+  color: #F4F6FB !important;
+  border-radius: 0.75rem !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.60) !important;
 }
 
-@keyframes jarvis-glow {
-  0%, 100% {
-    filter: drop-shadow(0 0 14px rgba(0, 166, 232, 0.45));
-  }
-  50% {
-    filter: drop-shadow(0 0 24px rgba(255, 45, 149, 0.55));
-  }
-}
-.animate-jarvis-glow {
-  animation: jarvis-glow 4s ease-in-out infinite;
+pre code,
+.arc-card-elevated pre code {
+  background-color: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  color: #F4F6FB !important;
+  font-family: var(--font-mono) !important;
 }
 
-/* Accessibility: Reduced Motion Override */
+/* Inline code tags */
+:not(pre) > code,
+.arc-card-elevated :not(pre) > code {
+  background-color: #10132A !important;
+  color: #35FEE4 !important;
+  border: 1px solid #1B2042 !important;
+  border-radius: 0.375rem !important;
+  padding: 0.15rem 0.4rem !important;
+  font-family: var(--font-mono) !important;
+  word-break: break-word !important;
+  overflow-wrap: anywhere !important;
+}
+
+/* Interactive Links */
+.arc-card-elevated a {
+  color: #35FEE4 !important;
+  text-decoration-color: rgba(53, 254, 228, 0.4) !important;
+  transition: color 150ms ease, text-decoration-color 150ms ease;
+}
+
+.arc-card-elevated a:hover {
+  color: #8BFFEF !important;
+  text-decoration-color: #35FEE4 !important;
+}
+
+/* Diagnostic & Schematics Markdown Tables */
+table,
+.arc-card-elevated table {
+  border-collapse: collapse !important;
+  color: #F4F6FB !important;
+}
+
+thead,
+.arc-card-elevated thead {
+  background-color: #0E1124 !important;
+  border-bottom: 1px solid #1B2042 !important;
+  color: #F4F6FB !important;
+}
+
+th,
+.arc-card-elevated th {
+  border-color: #1B2042 !important;
+  color: #F4F6FB !important;
+}
+
+tbody,
+.arc-card-elevated tbody {
+  background-color: #0B0D1D !important;
+  divide-color: #1B2042 !important;
+}
+
+tr,
+.arc-card-elevated tr {
+  border-bottom: 1px solid #1B2042 !important;
+}
+
+tr:hover,
+.arc-card-elevated tr:hover {
+  background-color: #10132A !important;
+}
+
+td,
+.arc-card-elevated td {
+  border-color: #1B2042 !important;
+  color: #94A3B8 !important;
+}
+
+/* Outer table wrapper */
+div:has(> table),
+.arc-card-elevated div:has(> table) {
+  border-color: #1B2042 !important;
+  background-color: #0B0D1D !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.40) !important;
+}
+
+/* User Message bubble styling in feed (clean elevated obsidian surface) */
+.diagnostic-feed-scrollbar .justify-end > div {
+  background-color: rgba(16, 19, 42, 0.90) !important;
+  border-color: rgba(43, 59, 255, 0.25) !important;
+  color: #F4F6FB !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45), inset 0 1px 0 0 rgba(255, 255, 255, 0.07) !important;
+}
+
+.diagnostic-feed-scrollbar .justify-end > div p {
+  color: #F4F6FB !important;
+}
+
+.diagnostic-feed-scrollbar .justify-end > div img {
+  background-color: #0B0D1D !important;
+  border-color: #1B2042 !important;
+}
+
+/* ==========================================================================
+   Tactile & Transition Classes
+   ========================================================================== */
+
+.arc-button-primary {
+  background-color: #2B3BFF;
+  color: #F4F6FB;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.40), inset 0 1px 0 0 rgba(255, 255, 255, 0.16);
+  transition: background-color 150ms var(--ease-out-arc), box-shadow 150ms var(--ease-out-arc), transform 80ms ease;
+}
+
+.arc-button-primary:hover:not(:disabled) {
+  background-color: #3848FF;
+  box-shadow: 0 0 16px rgba(43, 59, 255, 0.40), inset 0 1px 0 0 rgba(255, 255, 255, 0.20);
+}
+
+.arc-button-primary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.arc-button-secondary {
+  background-color: #0B0D1D;
+  border: 1px solid #1B2042;
+  color: #F4F6FB;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.30);
+  transition: background-color 150ms var(--ease-out-arc), border-color 150ms var(--ease-out-arc), color 150ms var(--ease-out-arc);
+}
+
+.arc-button-secondary:hover:not(:disabled) {
+  background-color: #10132A;
+  border-color: rgba(43, 59, 255, 0.35);
+  color: #FFFFFF;
+}
+
+/* Streaming indicator */
+.streaming-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 15px;
+  margin-left: 3px;
+  vertical-align: -1px;
+  background-color: #35FEE4;
+  box-shadow: 0 0 8px rgba(53, 254, 228, 0.60);
+  animation: arc-blink 0.9s infinite;
+}
+
+@keyframes arc-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Subtle cognitive pulsing text */
+.shimmer-text {
+  color: #35FEE4;
+  font-weight: 500;
+  text-shadow: 0 0 12px rgba(53, 254, 228, 0.30);
+}
+
+/* ==========================================================================
+   Reduced Motion Accessibility Overrides
+   ========================================================================== */
+
 @media (prefers-reduced-motion: reduce) {
-  *,
-  ::before,
-  ::after {
+  *, ::before, ::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
-    transform: none !important;
+  }
+  .streaming-cursor {
+    animation: none !important;
+    opacity: 1 !important;
   }
 }
-
-/* Utility to hide scrollbars while maintaining scroll functionality */
-.scrollbar-none::-webkit-scrollbar,
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.scrollbar-none,
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-/* 120Hz GPU-Composited Transitions (8.33ms Frame Budget) */
-.gpu-composited {
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
-  perspective: 1000px;
-  will-change: transform, opacity;
-}
-
-/* Radar scanner sweep animation for active optical DUT analysis */
-@keyframes radar-sweep {
-  0% {
-    top: 0%;
-    opacity: 0;
-  }
-  15% {
-    opacity: 1;
-  }
-  85% {
-    opacity: 1;
-  }
-  100% {
-    top: 100%;
-    opacity: 0;
-  }
-}
-
-.animate-radar-sweep {
-  animation: radar-sweep 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-}
-
-/* KaTeX formula rendering refinements */
-.katex-display {
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 0.35rem 0;
-  margin: 0.5rem 0;
-}
-
-.katex {
-  font-size: 1.05em;
-  text-rendering: auto;
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Google Flow-Inspired Fluid Spatial Physics & Aurora Lighting
-   ═══════════════════════════════════════════════════════════════ */
-
-:root {
-  --flow-spring: cubic-bezier(0.22, 1, 0.36, 1);
-  --flow-snappy: cubic-bezier(0.16, 1, 0.3, 1);
-  --flow-cerulean: #00A6E8;
-  --flow-rose: #FF2D95;
-}
-
-/* Smooth fluid spring transitions */
-.flow-spring {
-  transition: all 350ms var(--flow-spring);
-}
-
-.flow-spring-fast {
-  transition: all 200ms var(--flow-snappy);
-}
-
-/* Google Flow dynamic ambient aurora backlight */
-.flow-aurora-bg {
-  position: relative;
-}
-.flow-aurora-bg::before {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  background: linear-gradient(135deg, rgba(0, 166, 232, 0.35), rgba(255, 45, 149, 0.3));
-  border-radius: inherit;
-  z-index: -1;
-  opacity: 0;
-  transition: opacity 400ms var(--flow-spring), filter 400ms var(--flow-spring);
-  filter: blur(8px);
-}
-.flow-aurora-bg:hover::before {
-  opacity: 1;
-  filter: blur(14px);
-}
-
-/* Fluid Pill Mode Selectors */
-.flow-pill {
-  transition: transform 220ms var(--flow-spring), background-color 220ms ease, border-color 220ms ease, box-shadow 220ms ease, color 220ms ease;
-}
-.flow-pill:hover {
-  transform: translateY(-1.5px) scale(1.02);
-  box-shadow: 0 0 12px -2px rgba(0, 166, 232, 0.35);
-}
-.flow-pill:active {
-  transform: translateY(0.5px) scale(0.98);
-}
-
-/* Fluid Card Surface with Depth */
-.flow-card {
-  transition: transform 300ms var(--flow-spring), box-shadow 300ms var(--flow-spring), border-color 300ms ease;
-}
-.flow-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 30px -10px rgba(0, 166, 232, 0.18), 0 4px 12px -2px rgba(255, 45, 149, 0.12);
-}
-
-/* Staggered Google Flow Card Entrance */
-@keyframes flow-card-appear {
-  0% {
-    opacity: 0;
-    transform: translateY(10px) scale(0.99);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.flow-stagger-1 {
-  animation: flow-card-appear 420ms var(--flow-spring) backwards;
-}
-.flow-stagger-2 {
-  animation: flow-card-appear 420ms var(--flow-spring) 90ms backwards;
-}
-.flow-stagger-3 {
-  animation: flow-card-appear 420ms var(--flow-spring) 180ms backwards;
-}
-
-/* Subtle Magnetic Border Hover Glow on Bento Cards */
-.flow-bento-card {
-  transition: transform 320ms var(--flow-spring), border-color 280ms ease, box-shadow 320ms var(--flow-spring);
-}
-.flow-bento-card:hover {
-  border-color: rgba(0, 166, 232, 0.4);
-  box-shadow: 0 0 24px -4px rgba(0, 166, 232, 0.16), 0 0 12px -2px rgba(255, 45, 149, 0.1);
-}
-
-/* Live Cognitive Trace Shimmer */
-@keyframes flow-shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-.flow-shimmer-text {
-  background: linear-gradient(90deg, #00A6E8 0%, #ffffff 50%, #FF2D95 100%);
-  background-size: 200% auto;
-  color: transparent;
-  -webkit-background-clip: text;
-  background-clip: text;
-  animation: flow-shimmer 2.4s linear infinite;
-}
-
-/* Streaming token cursor */
-@keyframes flow-cursor-blink {
-  0%, 100% {
-    opacity: 1;
-    transform: scaleY(1);
-  }
-  50% {
-    opacity: 0.15;
-    transform: scaleY(0.7);
-  }
-}
-
-.flow-streaming-cursor {
-  display: inline-block;
-  width: 7px;
-  height: 1.1em;
-  vertical-align: -0.15em;
-  margin-left: 3px;
-  background: linear-gradient(180deg, #00A6E8, #FF2D95);
-  border-radius: 2px;
-  box-shadow: 0 0 8px rgba(0, 166, 232, 0.6);
-  animation: flow-cursor-blink 0.8s ease-in-out infinite;
-}
-

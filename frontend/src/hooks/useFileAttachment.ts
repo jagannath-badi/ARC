@@ -14,9 +14,11 @@ const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 export function useFileAttachment({
   onFileSelect,
   onError,
+  shouldRevoke,
 }: {
   onFileSelect?: (file: File, previewUrl: string) => void;
   onError?: (message: string) => void;
+  shouldRevoke?: (url: string) => boolean;
 } = {}) {
   const [attachment, setAttachment] = useState<FileAttachment>({
     file: null,
@@ -29,8 +31,11 @@ export function useFileAttachment({
 
   const clearAttachment = useCallback(() => {
     if (attachment.previewUrl) {
-      URL.revokeObjectURL(attachment.previewUrl);
-      objectUrlsRef.current.delete(attachment.previewUrl);
+      const doRevoke = shouldRevoke ? shouldRevoke(attachment.previewUrl) : true;
+      if (doRevoke) {
+        URL.revokeObjectURL(attachment.previewUrl);
+        objectUrlsRef.current.delete(attachment.previewUrl);
+      }
     }
     setAttachment({
       file: null,
@@ -39,7 +44,7 @@ export function useFileAttachment({
       type: null,
       size: null,
     });
-  }, [attachment.previewUrl]);
+  }, [attachment.previewUrl, shouldRevoke]);
 
   const handleFileSelect = useCallback((file: File) => {
     const isImage = ALLOWED_IMAGE_TYPES.includes(file.type);
@@ -57,10 +62,13 @@ export function useFileAttachment({
       return;
     }
 
-    // Clear previous preview
+    // Clear previous preview if not retained
     if (attachment.previewUrl) {
-      URL.revokeObjectURL(attachment.previewUrl);
-      objectUrlsRef.current.delete(attachment.previewUrl);
+      const doRevoke = shouldRevoke ? shouldRevoke(attachment.previewUrl) : true;
+      if (doRevoke) {
+        URL.revokeObjectURL(attachment.previewUrl);
+        objectUrlsRef.current.delete(attachment.previewUrl);
+      }
     }
 
     const objectUrl = URL.createObjectURL(file);
@@ -75,7 +83,7 @@ export function useFileAttachment({
     });
 
     onFileSelect?.(file, objectUrl);
-  }, [attachment.previewUrl, onFileSelect, onError]);
+  }, [attachment.previewUrl, onFileSelect, onError, shouldRevoke]);
 
   // Cleanup on unmount
   const urlsRef = useRef<Set<string>>(new Set());

@@ -1,300 +1,250 @@
-# CircuitSnap — System Architecture & Technical Specification
+# ARC — System Architecture & Technical Specification
 
-This document details the software architecture, runtime topology, data flows, and component specifications of the **CircuitSnap** platform.
+This document details the software architecture, runtime topology, data flows, and component specifications of the **ARC** academic reasoning workbench.
 
 ---
 
 ## 1. System Overview & Architecture Topology
 
-CircuitSnap is an AI-powered engineering verification and diagnostic assistant tailored for engineering students (specializing in ECE, Electrical, Computer Science, Mechanical, Civil, and Engineering Mathematics) and laboratory researchers.
+ARC is an AI-powered multi-discipline engineering command center and diagnostic assistant tailored for engineering students, researchers, and professional practitioners specializing in **Electrical & Electronics (ECE)**, **Computer Science & Digital Systems**, **Applied Mathematics**, **Mechanical & Thermodynamics**, and **Civil Engineering**.
 
-The system is deployed as a high-performance decoupled modern web application:
+The application is deployed as a unified, high-performance web platform combining a **React 19 + TypeScript + Vite 8 + Tailwind CSS v4** frontend with an integrated **TypeScript on Node.js Serverless API layer**. LLM query orchestration and multimodal vision route through a multi-provider gateway supporting Google Gemini and OpenAI-compatible endpoints.
 
 ```mermaid
 flowchart TD
-    subgraph Client Tier
-        Browser["Web Browser (Port 5173)"]
+    subgraph Client Tier ["Client Tier (Browser :5173)"]
+        UI["ARC 2D Deep Obsidian Workbench (React 19)"]
+        TopBar["ArcTopBar (Telemetry & Models)"]
+        SessionRail["ArcSessionRail (History Drawer)"]
+        Hero["ArcHero (Discipline Starters)"]
+        Composer["ArcComposer (Prompt & Attachment)"]
+        Feed["DiagnosticFeed (KaTeX & AST Badges)"]
+        Vault["VaultDrawer (Session Storage)"]
+
+        UI --> TopBar
+        UI --> SessionRail
+        UI --> Hero
+        UI --> Composer
+        UI --> Feed
+        UI --> Vault
     end
 
-    subgraph Frontend Application
-        ReactApp["React 19 Frontend (Vite:5173)"]
-        ViteProxy["Vite Dev Proxy (/api -> :8000)"]
+    subgraph APITier ["TypeScript Serverless API Layer (frontend/api/)"]
+        HealthRoute["GET /api/health"]
+        ChatRoute["POST /api/chat (SSE Stream)"]
+        AnalyzeRoute["POST /api/analyze (Vision)"]
+        ModelsRoute["GET /api/models"]
+        VaultRoute["/api/vault (Session Store)"]
+        LearnRoute["/api/learn (Feedback & Stats)"]
+        AuthRoute["/api/auth (Operator Profiles)"]
     end
 
-    subgraph Backend Application
-        FastAPI["FastAPI Backend (backend.main:app:8000)"]
-        Routers["APIRouters (chat.py, analyze.py, voice.py, learn.py)"]
-        JarvisEngine["J.A.R.V.I.S. Cognitive Engines (math, mech, vault)"]
+    subgraph IntelligenceLayer ["LLM Gateway (_lib/provider.ts)"]
+        ProviderRouter["Provider & Fallback Router"]
+        GeminiSDK["Google Gemini 2.5 Flash / Pro (@google/genai)"]
+        OpenAIGateway["OpenAI-Compatible Gateway"]
+        StandbyEngine["ARC Diagnostic Standby Mode"]
     end
 
-    subgraph Core Intelligence Layer
-        Engine["Engine (engine.py)"]
-        Models["Model Registry (models.py)"]
-        Prompts["Prompts & Calibration (prompts.py)"]
-        Providers["AI Providers (providers.py)"]
-    end
-
-    subgraph AI External Services
-        GeminiAPI["Google GenAI API (Gemini 3.8 Flash)"]
-        OpenJarvisAPI["OpenJarvis Local (Qwen 3 8B)"]
-    end
-
-    Browser -->|HTTP:5173| ReactApp
-    ReactApp --> ViteProxy
-    ViteProxy -->|HTTP:8000| FastAPI
-    FastAPI --> Routers
-    FastAPI --> JarvisEngine
-    Routers --> Engine
-
-    Engine --> Models
-    Engine --> Prompts
-    Engine --> Providers
-    Providers --> GeminiAPI
-    Providers --> OpenJarvisAPI
+    UI -->|REST / SSE Stream| APITier
+    APITier --> ProviderRouter
+    ProviderRouter -->|GEMINI_API_KEY| GeminiSDK
+    ProviderRouter -->|OPENAI_KEY / BASE_URL| OpenAIGateway
+    ProviderRouter -->|No Keys Configured| StandbyEngine
 ```
 
 ---
 
-## 2. Core Intelligence Layer
+## 2. 2D "Deep Obsidian" Engineering Design System
 
-The core reasoning logic is completely decoupled from presentation frameworks, providing reliable intelligence guarantees:
+ARC utilizes a high-contrast, technical 2D aesthetic engineered for focus and zero visual fatigue during demanding derivation sessions:
 
-1. **`models.py` (Model Registry)**:
-   - Configures model identifiers, fallback cascades, vision flags, and human-readable metadata.
-   - **Primary Model**: `Gemini` (`gemini-3.8-flash`) with fallback to `gemini-3.1-flash-lite` and `gemini-3.6-flash`.
-   - **Local Alternative**: `OpenJarvis` (`qwen3:8b`) acting as a high-speed local alternative and cross-provider fallback.
-2. **`prompts.py` (Prompt Engineering & Output Calibration)**:
-   - Establishes the CircuitSnap system prompt and adaptive output calibration.
-   - For basic conceptual questions, enforces succinct definitions (80–120 words) with bold lead-ins.
-   - For complex circuit analysis and debugging, enforces structured point-wise explanations and verified component breakdowns.
-3. **`providers.py` (AI Communication & Failover)**:
-   - Encapsulates SDK client initialization (`google.genai.Client` and `OpenJarvis` HTTP client).
-   - Retrieves API keys securely (`os.environ`).
-   - Implements multi-cycle retry and cross-model/cross-provider fallback upon rate limit or service interruption.
-4. **`engine.py` (Intelligence Orchestration)**:
-   - Categorizes input types (`component`, `circuit_diagram`, `physical_circuit`, `electronics_document`).
-   - Detects intent (`identify`, `explain`, `test`, `troubleshoot`, `calculate`, `viva`).
-   - Executes multi-turn history formatting and image payload attachment before dispatching to the provider layer.
+### Color Palette & Token Hierarchy
+
+| Design Token | Value | Semantic Role |
+| :--- | :--- | :--- |
+| **Base Canvas** | `#05060F` | Deep Obsidian background canvas with `.arc-dot-grid` coordinate overlay |
+| **Surface Level 1** | `#0B0D1D` | Primary cards, optical scope viewport, composer dock, and KaTeX containers |
+| **Surface Level 2** | `#10132A` | Elevated popovers, command palette modal, and active selection pills |
+| **Surface Hover** | `#161A38` | Interactive hover states and table row highlights |
+| **Crisp 1px Border** | `#1B2042` | Solid default technical border for card and component separation |
+| **Subtle Border** | `rgba(43, 59, 255, 0.22)` | Electric Indigo tinted boundary with specular micro-highlight |
+| **Primary Active** | `#2B3BFF` | Electric Indigo focus rings, primary action triggers, and math indicators |
+| **Precision Telemetry**| `#35FEE4` | Tropical Mint telemetry shimmer, streaming cursor, and verified inline tokens |
+| **Primary Text** | `#F4F6FB` | Ultra-high contrast text for headers, derivations, and math symbols |
+| **Secondary Text** | `#94A3B8` | Subheadings, parameter descriptions, and secondary metadata |
+| **Muted Text** | `#64748B` | Timestamps, cycle counts, units, and inactive labels |
+
+### Architectural Coordinate Dot Overlay (`.arc-dot-grid`)
+- Background: `radial-gradient(rgba(43, 59, 255, 0.20) 1px, transparent 1px)`
+- Grid size: `24px 24px`
+- Renders an unobtrusive engineering blueprint coordinate canvas across the workbench.
 
 ---
 
-## 3. FastAPI Backend Architecture
+## 3. Frontend Architecture & Component Topology
 
-Located in `backend/`, the FastAPI service provides structured, type-safe REST endpoints with automated Pydantic v2 validation.
+The React 19 application lives entirely in `frontend/src/` with a component hierarchy built for speed, keyboard navigation, and cognitive clarity:
 
-### Request & Response Schemas (`backend/schemas.py`)
-- **`ChatMessage`**: Represents an individual conversation turn:
-  ```python
-  class ChatMessage(BaseModel):
-      role: Literal["user", "assistant"]
-      content: str
-  ```
-- **`ChatRequest`**: Payload for `/api/chat`:
-  - `message`: `str` (1 to 20,000 characters, extra fields forbidden)
-  - `history`: `list[ChatMessage]` (up to 100 turns)
-  - `provider`: `str | None`
-  - `model_id`: `str | None`
-  - `previous_visual_context`: `dict[str, Any] | None`
-- **`ChatResponse`**: Standardized response for all AI operations:
-  - `answer`: `str` (Markdown content with KaTeX and badges)
-  - `provider`: `str`
-  - `model_id`: `str`
-  - `status`: `"success"` | `"error"`
-  - `error_type`: `str | None`
-  - `fallback_used`: `bool`
-  - `attempts`: `int`
-- **`HealthResponse`**: Payload for `/api/health` providing backend status and active model configuration.
+```text
+frontend/src/
+├── main.tsx                    # React root, KaTeX stylesheet, index.css
+├── App.tsx                     # Main ARC workbench shell, state machines, DUT scope
+├── api.ts                      # Client wrappers for chat, analyze, vault, and models
+├── index.css                   # Deep Obsidian design tokens, scrollbars, KaTeX overrides
+├── components/
+│   ├── ArcTopBar.tsx           # Pinned top telemetry bar, health LED, model selector, bench reset
+│   ├── ArcSessionRail.tsx      # Slide-out collapsible engineering session drawer
+│   ├── ArcHero.tsx             # Focused engineering hero studio & discipline starters
+│   ├── ArcComposer.tsx         # Multi-discipline prompt composer with image drop/paste & voice
+│   ├── ArcCommandPalette.tsx   # Command palette modal (Ctrl+K / Cmd+K)
+│   ├── DiagnosticFeed.tsx      # Real-time streaming chat feed with KaTeX math & AST badges
+│   └── VaultDrawer.tsx         # Slide-over Knowledge Vault for pinned derivations & lab notes
+└── hooks/                      # Custom hooks (file attachment, audio recording, etc.)
+```
+
+### Component Roles & Invariants
+1. **`ArcTopBar.tsx`**:
+   - Fixed `h-[56px]`, glass surface (`rgba(11, 13, 29, 0.85)`).
+   - Telemetry status LED querying `GET /api/health` (`SYS ONLINE`, `INITIALIZING`, `STANDBY`).
+   - Active provider/model selector chip with direct routing override.
+   - `RESET BENCH` action to clean memory and unmount all active inspection files.
+2. **`ArcSessionRail.tsx`**:
+   - Fast session switching and local session history persistence.
+3. **`ArcComposer.tsx`**:
+   - Auto-resizing textarea with <kbd>Enter</kbd> to send and <kbd>Shift+Enter</kbd> for multi-line formulas.
+   - Drag-and-drop, file browser, and global clipboard paste (<kbd>Ctrl+V</kbd>) attachment handlers.
+   - Response style toggles: `Engineering Rigor`, `Natural Dialogue`, and `High-Density Concise`.
+4. **`DiagnosticFeed.tsx`**:
+   - Height-locked scrollable log styled with `.diagnostic-feed-scrollbar`.
+   - Assistant message bubbles wrapped in `.arc-card-elevated`.
+   - Streaming text animation via `.streaming-cursor` and `.shimmer-text`.
+
+---
+
+## 4. TypeScript Serverless API Layer (`frontend/api/`)
+
+The API layer is implemented completely in TypeScript on Node.js:
 
 ### Endpoint Specifications
-1. **`GET /api/health`** ([`main.py`](file:///c:/Users/jagan/CircuitSnap/backend/main.py#L44-L56)):
-   - Checks service liveness and resolves default model configurations from `models.py`.
-2. **`POST /api/chat`** ([`routers/chat.py`](file:///c:/Users/jagan/CircuitSnap/backend/routers/chat.py#L14-L65)):
-   - Processes multi-turn textual conversations.
-   - Validates provider and model parameters against `models.py`.
-   - Invokes `engine.run_engine` with text and history context.
-3. **`POST /api/analyze`** ([`routers/analyze.py`](file:///c:/Users/jagan/CircuitSnap/backend/routers/analyze.py#L23-L109)):
-   - Accepts `multipart/form-data` uploads with file size limit enforcement (10 MB).
-   - Validates MIME types (`image/jpeg`, `image/png`, `image/webp`, `image/gif`).
-   - Streams chunks into memory and passes raw bytes to `engine.run_engine`.
+1. **`GET /api/health`**:
+   - Returns service liveness, active provider configuration, and default model resolution. `available_providers` lists SDKs detected in environment.
+
+2. **`POST /api/chat`**:
+   - Accepts `ChatRequest` payloads (`message`, `history`, `model`, `provider`, `style`, `privacy_mode`, `stream`).
+   - Supports **Server-Sent Events (SSE)** streaming (`text/event-stream`) emitting `step`, `chunk`, `done`, and `error` events.
+   - Non-streaming returns deterministic `ChatResponse` with `provider`, `model_id`, `attempts`, and `fallback_used`.
+
+3. **`POST /api/analyze`**:
+   - Accepts base64 image data (data URI or raw) and MIME type for multimodal circuit, schematic, or formula visual analysis.
+   - Dispatches visual tokens to active vision provider (Gemini multimodal vision 或 OpenAI-compatible vision endpoint).
+
+4. **`GET /api/models`**:
+   - Returns model registry with `id`, `label`, `provider`, `specialty`, and `supports_vision` flags.
+   - Available models: `auto` (ARC router), `gemini-2.5-flash`, `gemini-2.5-pro`, `openai-gateway`.
+
+5. **`/api/vault/sessions`**:
+   - In-memory session store for current operator. No persistent storage yet.
+   - Supports CRUD on session snapshots (list, create, read, delete).
+
+6. **`/api/learn/stats`**:
+   - Returns static knowledge vault statistics (total documents, chunks, branch breakdowns).
+
+   **PLANNED**:
+   - Persistent storage migration (SQLite or file system)
+   - Real document ingestion with chunking
+   - Vector embeddings and semantic search
+   - Retrieval-augmented generation context injection
 
 ---
 
-## 4. React 19 Frontend Architecture
+## 5. LLM-First RAG Intelligence Gateway & Security Isolation
 
-The frontend is built with React 19, TypeScript, and Tailwind CSS v4, compiled using Vite 8.
+The gateway (`frontend/api/_lib/provider.ts`) routes queries through a multi-provider hierarchy:
 
-### Component Hierarchy
-```text
-main.tsx
-└── App.tsx
-    ├── TelemetryHeader.tsx
-    ├── Section A: Optical Inspection Scope (Left Column)
-    │   ├── Hidden File Input (<input type="file" />)
-    │   ├── Pinned Optical HUD Scope Viewport
-    │   │   ├── Active DUT State (Reticle Overlays, Telemetry Bar, REPLACE & EJECT)
-    │   │   └── Standby Reticle (Dropzone & Paste Target)
-    │   └── Workbench Quick-Action Chips
-    └── Section B: Diagnostic Log & Analysis Feed (Right Column)
-        ├── Feed Header & Status LED
-        ├── Height-Locked Scrollable Message Stream
-        │   ├── User Message Bubble (Smoked Cyan Card + Image Thumbnail)
-        │   └── Assistant Message Bubble (KaTeX + ReactMarkdown + Confidence Badges)
-        └── Pinned Bottom Composer Bar (Textarea + Attach Button + Emerald Send Trigger)
-```
-
-### Vite Dev Proxy (`vite.config.ts`)
-```typescript
-export default defineConfig({
-  plugins: [react(), tailwindcss()],
-  server: {
-    port: 5173,
-    proxy: {
-      '/api': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
-    },
-  },
-})
-```
-
----
-
-## 5. End-to-End Data Flows
-
-### A. Optical Analysis Data Flow
 ```mermaid
-sequenceDiagram
-    autonumber
-    actor User
-    participant Scope as Left Scope (App.tsx)
-    participant Composer as Composer Bar
-    participant API as api.ts (analyzeImage)
-    participant Backend as FastAPI (/api/analyze)
-    participant Engine as engine.py
-    participant Provider as providers.py
-    participant AI as Gemini 3.8 Flash
+flowchart TD
+    Request["Incoming API Request (/api/chat or /api/analyze)"] --> Router["Provider Router (provider.ts)"]
 
-    User->>Scope: Drop / Paste Image (Ctrl+V)
-    Scope->>Scope: Store in activeDutImage & activeObjectUrlsRef
-    Scope->>Composer: Populate attachedFile & imagePreview
-    User->>Composer: Click SEND (or press Enter)
-    Composer->>Composer: Snapshot attachedFile, clear draft attachment UI
-    Composer->>API: POST /api/analyze (FormData)
-    API->>Backend: Multipart upload (file + prompt)
-    Backend->>Backend: Validate size (<=10MB) & MIME type
-    Backend->>Engine: run_engine(image_bytes, mime_type, text)
-    Engine->>Provider: generate_response(prompt, image)
-    Provider->>AI: Google GenAI Vision Request
-    AI-->>Provider: Generated Markdown Analysis
-    Provider-->>Engine: Raw text response
-    Engine-->>Backend: Result dictionary
-    Backend-->>API: ChatResponse JSON
-    API-->>Scope: Render Assistant Card with KaTeX & Badges
-    Note over Scope: activeDutImage remains pinned in Left Scope
+    Router --> CheckGemini{"GEMINI_API_KEY Configured?"}
+    CheckGemini -->|Yes| GeminiCall["Dispatch to @google/genai (Gemini 2.5 Flash / Pro)"]
+    CheckGemini -->|No| CheckOpenAI{"OPENAI_API_KEY / BASE_URL Configured?"}
+
+    CheckOpenAI -->|Yes| OpenAICall["Dispatch to OpenAI-Compatible Gateway (OmniRoute / FreeLLMAPI / Local)"]
+    CheckOpenAI -->|No| StandbyCall["Dispatch to ARC Diagnostic Standby Mode"]
+
+    GeminiCall --> Success{"Execution Success?"}
+    OpenAICall --> Success
+
+    Success -->|Yes| ReturnResult["Stream or Return Standardized ChatResponse"]
+    Success -->|Rate Limit / Error| Fallback["Automated Gateway Failover Cascade"]
+    Fallback --> OpenAICall
+    Fallback --> StandbyCall
 ```
 
-### B. Multi-Turn Text Conversation Flow
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User
-    participant Composer as Composer Bar
-    participant API as api.ts (sendChatMessage)
-    participant Backend as FastAPI (/api/chat)
-    participant Engine as engine.py
-    participant Provider as providers.py
-    participant AI as Gemini 3.8 Flash
-
-    User->>Composer: Enter query + press Enter
-    Composer->>Composer: Append User DisplayMessage to state
-    Composer->>API: POST /api/chat (message, history)
-    API->>Backend: JSON ChatRequest
-    Backend->>Engine: run_engine(user_text, history)
-    Engine->>Provider: Streamlined textual conversation context
-    Provider->>AI: Model execution
-    AI-->>Provider: Response
-    Provider-->>Engine: Formatted answer
-    Engine-->>Backend: Result dictionary
-    Backend-->>API: ChatResponse JSON
-    API-->>Composer: Render Assistant DisplayMessage
-```
+### Provider Architecture & Invariants
+- **Google Gemini**: Uses `@google/genai` SDK when `GEMINI_API_KEY` is configured. Defaults to `gemini-2.5-flash`, optionally overridden by `gemini-2.5-pro`. Supports native multimodal vision, streaming text, and high-precision KaTeX formula synthesis.
+- **OpenAI-Compatible Gateway**: Routes to any OpenAI-compatible HTTP endpoint via `OPENAI_API_KEY` and optional `OPENAI_BASE_URL`. Example backends: cloud proxies, local gateways (Ollama, vLLM), or custom API routers.
+- **ARC Diagnostic Standby Mode**: If no API keys are detected (`GEMINI_API_KEY` or `OPENAI_API_KEY` + `OPENAI_BASE_URL`), returns deterministic standby responses explaining setup instructions instead of crashing or returning blank assistant bubbles. Used during development and without credentials configured.
+- **Route Resolution Logic** ([`provider.ts:253-466`](frontend/api/_lib/provider.ts#L253-L466)):
+  1. Explicitly requested `provider === 'openai'` OR OpenAI configured AND not requesting Gemini → Dispatch to OpenAI gateway.
+  2. Gateway unavailable OR not configured → Dispatch to Google Gemini (if key present).
+  3. No provider keys → Resolve to ARC Diagnostic Standby Mode.
+- **Strict Prohibition on Groq**: Groq endpoints and integrations are strictly prohibited (`no Groq`).
+- **Zero Secret Exposure**: API keys are read strictly from environment variables (`GEMINI_API_KEY`, `OPENAI_API_KEY`, `OPENAI_BASE_URL`). Authorization headers and credentials are never logged, echoed, or included in client payloads in any response.
 
 ---
 
-## 6. Cyber-Physical Hardware Workbench UI Layout
+## 6. Rendering Pipeline & AST Transformations
 
-The layout is structured as a two-column fixed-viewport grid (`h-screen overflow-hidden`):
-
-### 1. Pinned Top Telemetry Header (`TelemetryHeader.tsx`)
-- **Dimensions**: Fixed `h-[65px]`, sticky top, acrylic frosted glass (`bg-slate-900/70 backdrop-blur-md border-b border-white/10`).
-- **Hardware Status LED**: Queries `GET /api/health`:
-  - `SYS ONLINE` (emerald pulse LED)
-  - `INITIALIZING` (amber spin LED)
-  - `SYS OFFLINE` (rose LED with click-to-refresh)
-- **Telemetry Chips**: Monospace chips displaying active `PROV`, `MODEL`, `CYCLES` (attempts count), and `FALLBACK` warning badge.
-- **Workbench Reset**: `RESET BENCH` action button with confirmation state detection.
-
-### 2. Column A: Left Optical Inspection Scope (~38% width / `lg:col-span-5`)
-- **Pinned Optical HUD Scope**:
-  - Locked display of `activeDutImage`.
-  - Tactical HUD corner reticles and translucent optical crosshairs.
-  - Telemetry bar with component filename, file size, and controls:
-    - **`REPLACE`**: Opens system file picker to load a new DUT without resetting chat history.
-    - **`EJECT / CLEAR DUT`**: Unmounts image and returns scope to standby.
-- **Standby Reticle**:
-  - Activated when no image is loaded.
-  - Interactive dropzone supporting drag-and-drop, direct click, and global clipboard paste (<kbd>Ctrl+V</kbd>).
-- **Bench Quick-Actions Grid**:
-  - 4 pre-calibrated ECE prompts: *Decode Color Bands*, *Op-Amp Pinout & Specs*, *555 Timer Config*, *Troubleshoot Short / Noise*.
-
-### 3. Column B: Right Diagnostic Log & Analysis Feed (~62% width / `lg:col-span-7`)
-- **Feed Stream**:
-  - Height-locked scrollable log styled with `.diagnostic-feed-scrollbar`.
-  - **User Message Bubble**: Smoked cyan instrument card (`bg-cyan-950/40 border border-cyan-800/50 text-cyan-100 shadow-[0_4px_20px_rgba(6,182,212,0.1)]`) with uploaded thumbnail bezel.
-  - **Assistant Message Bubble**: Smoked slate card (`bg-slate-950/90 border border-slate-800/90`) with KaTeX formulas, single-pill confidence badges, and cycle telemetry.
-- **Pinned Composer Bar**:
-  - Auto-resizing textarea with <kbd>Enter</kbd> to send and <kbd>Shift+Enter</kbd> for newlines.
-  - Optical scope load button.
-  - Phosphor emerald trigger button (`bg-emerald-600 hover:bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]`).
-
----
-
-## 7. Rendering Pipeline & AST Transformations
-
-To render academic ECE content cleanly without layout shifts or border glitches, CircuitSnap processes assistant Markdown through an AST pipeline:
+To render academic engineering content cleanly without layout shifts or border artifacts, assistant Markdown is processed through an AST pipeline:
 
 ```mermaid
 flowchart LR
-    RawMarkdown["Raw Markdown from Assistant"] --> Remark["remark-math (Parses $ and $$)"]
-    Remark --> RehypeKatex["rehype-katex (Generates KaTeX Math Nodes)"]
-    RehypeKatex --> ASTPlugin["rehypeConfidenceBadges (Custom HAST Walk)"]
-    ASTPlugin --> ReactComponents["markdownComponents (p, li, code, pre, etc.)"]
-    ReactComponents --> VirtualDOM["Rendered HTML Viewport"]
+    Raw["Raw Assistant Markdown"] --> RemarkMath["remark-math ($ and $$)"]
+    RemarkMath --> RemarkGFM["remark-gfm (Tables, Strikethrough)"]
+    RemarkGFM --> RehypeK["rehype-katex (Formula Tree)"]
+    RehypeK --> BadgeAST["rehypeConfidenceBadges (Single-Pill Ingestion)"]
+    BadgeAST --> CompMap["markdownComponents (Deep Obsidian Theming)"]
+    CompMap --> DOM["Rendered 2D Viewport"]
 ```
 
 ### 1. `rehypeConfidenceBadges` Plugin
-- **The Problem Solved**: Markdown parent wrappers (`li`, `p`, `span`, `strong`) previously parsed text individually, creating multiple nested borders around confidence tags.
-- **AST Solution**: Operates directly on HAST text nodes. It ignores `<code>`, `<pre>`, and `.katex` nodes, splitting text on `BADGE_REGEX`:
-  ```regex
-  /((?:\[\s*CANNOT CONFIRM\s*\]|\bCANNOT CONFIRM\b|\[\s*CONFIRMED\s*\]|\bCONFIRMED\b|\[\s*LIKELY\s*\]|\bLIKELY\b)(?:\s*[:—–-])?\s*)/g
-  ```
-- **Result**: Exactly one self-contained, illuminated badge pill is injected into the tree.
+- Walks the HTML Abstract Syntax Tree (HAST) and identifies confidence tokens:
+  - `CONFIRMED` -> Emerald badge (`badge-success`)
+  - `LIKELY` -> Amber badge (`badge-warm`)
+  - `CANNOT CONFIRM` -> Rose badge (`badge-danger`)
+- Skips `<code>`, `<pre>`, and `.katex` nodes to prevent corrupting code snippets or formulas.
+- Replaces tokens in-place to guarantee single-pill badges without nested parent borders.
 
-### 2. KaTeX Mathematical Notation
-- **Inline**: Enclosed in single dollar signs (`$V_{out} = V_{in} \cdot \frac{R_2}{R_1 + R_2}$`).
-- **Display Blocks**: Enclosed in double dollar signs (`$$\omega_0 = \frac{1}{\sqrt{LC}}$$`).
-- **CSS Guard**: `.katex-display` is constrained with `overflow-x: auto` to prevent long mathematical derivations from blowing out mobile or narrow split-pane containers.
+### 2. KaTeX Mathematical Notation Overrides
+- **Inline**: Enclosed in single dollar signs: `$f_c = \frac{1}{2\pi R C}$`
+- **Display Blocks**: Enclosed in double dollar signs: `$$A_v = -\frac{R_f}{R_{in}}$$`
+- **Deep Obsidian Constraints**:
+  - Overridden with `#F4F6FB` text color and `text-rendering: auto`.
+  - `.katex-display` is wrapped in `#0B0D1D` background with `1px solid #1B2042` and a `2px solid #2B3BFF` left telemetry accent.
+  - Constrained with `overflow-x: auto` and `overflow-y: hidden` to prevent formula clipping on mobile viewports.
 
 ---
 
-## 8. Memory Management & Object URL Lifecycle
+## 7. Memory Management & Object URL Lifecycle
 
-CircuitSnap manages image preview memory deterministically using `activeObjectUrlsRef`:
+ARC manages image preview memory deterministically using `activeObjectUrlsRef` in `frontend/src/App.tsx`:
 
-1. When a user uploads or pastes an image, an object URL is generated via `URL.createObjectURL(file)`.
+1. When a user uploads, drops, or pastes an image, an object URL is generated via `URL.createObjectURL(file)`.
 2. The URL string is added to `activeObjectUrlsRef.current: Set<string>`.
 3. When clearing the draft attachment (`removeAttachedFile`), `imagePreview` is revoked only if it does not equal `activeDutImage`.
 4. When resetting the workbench (`handleClearChat`), `activeObjectUrlsRef` iterates through all stored URLs and executes `URL.revokeObjectURL(url)` before clearing the set.
 5. On component unmount, a cleanup hook safely revokes all remaining URLs.
 
+---
+
+## 8. Verification & Engineering Discipline
+
+Every modification to the codebase must be validated before completion using the project's verification protocol:
+
+```powershell
+cd frontend
+npm run lint    # oxlint: 0 errors, 0 warnings
+npm run build   # tsc -b && vite build: exit code 0
+```

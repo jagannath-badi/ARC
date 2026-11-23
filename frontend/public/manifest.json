@@ -1,0 +1,17 @@
+{
+  "name": "ARC Academic Workbench",
+  "short_name": "ARC",
+  "description": "ARC — AI-Powered Academic Workbench & Multi-Discipline Reasoning Workspace",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#05060F",
+  "theme_color": "#05060F",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
