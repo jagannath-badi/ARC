@@ -335,6 +335,8 @@ export function cleanTextForSpeech(raw: string): string {
     // Preserve sentence boundaries and numbers for lists before collapsing whitespace
     .replace(/(?:^|\n)\s*(\d+)\.\s+/g, '. Step $1: ')
     .replace(/(?:^|\n)\s*[-*+]\s+/g, '. ')
+    .replace(/\\\[([\s\S]*?)\\\]/g, ' $1 ')
+    .replace(/\\\(([\s\S]*?)\\\)/g, ' $1 ')
     .replace(/\$\$([\s\S]*?)\$\$/g, ' $1 ')
     .replace(/\$([^$]+)\$/g, ' $1 ')
     .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1 over $2')

@@ -7,6 +7,39 @@ console.log('--- RUNNING ARC AUDIT VERIFICATION CHECKS ---');
 // ============================================================================
 console.log('\n[TEST 1] Verifying streaming unclosed code indentation preservation...');
 
+function normalizeLatexDelimiters(text) {
+  if (!text) return '';
+
+  // 1. Convert \[ ... \] (single or multi-line) to $$ ... $$ display math blocks
+  text = text.replace(/\\\[([\s\S]*?)\\\]/g, (_m, eq) => {
+    return `\n\n$$\n${eq.trim()}\n$$\n\n`;
+  });
+
+  // 2. Convert \( ... \) to $ ... $ inline math expressions
+  text = text.replace(/\\\(([\s\S]*?)\\\)/g, (_m, eq) => {
+    return `$${eq.trim()}$`;
+  });
+
+  // 3. Convert stray '[' and ']' on their own lines around LaTeX math blocks
+  text = text.replace(/(?:^|\n)[ \t]*\[[ \t]*\n([\s\S]*?\\[a-zA-Z][\s\S]*?)\n[ \t]*\][ \t]*(?=\n|$)/g, (_m, eq) => {
+    return `\n\n$$\n${eq.trim()}\n$$\n\n`;
+  });
+
+  // 4. Wrap standalone LaTeX environments not already enclosed in $$
+  const envRegex = /(?:^|\n)[ \t]*(\\begin\{(?:aligned|align\*?|equation\*?|gather\*?|pmatrix|bmatrix|vmatrix|Bmatrix|Vmatrix|matrix|cases)\}[\s\S]*?\\end\{(?:aligned|align\*?|equation\*?|gather\*?|pmatrix|bmatrix|vmatrix|Bmatrix|Vmatrix|matrix|cases)\})[ \t]*(?=\n|$)/g;
+
+  text = text.replace(envRegex, (fullMatch, envBlock, offset, src) => {
+    const before = src.slice(0, offset);
+    const doubleDollarCount = (before.match(/\$\$/g) || []).length;
+    if (doubleDollarCount % 2 === 1) {
+      return fullMatch;
+    }
+    return `\n\n$$\n${envBlock.trim()}\n$$\n\n`;
+  });
+
+  return text;
+}
+
 function normalizeProseContent(raw) {
   if (!raw) return '';
   const parts = raw.split(/(```[\s\S]*?(?:```|$))/g);
@@ -14,6 +47,7 @@ function normalizeProseContent(raw) {
     let part = parts[i].replace(/\r\n/g, '\n');
     part = part.replace(/\n{3,}/g, '\n\n');
     part = part.replace(/[^\S\n]{3,}/g, ' ');
+    part = normalizeLatexDelimiters(part);
     parts[i] = part;
   }
   return parts.join('');
@@ -230,4 +264,31 @@ assert(errorCaught !== null, 'FAIL: Expected stream interruption error was not t
 assert(errorCaught.message.includes('Stream interrupted mid-generation'), 'FAIL: Wrong error message');
 console.log('✓ PASS: Mid-stream error was isolated cleanly without gluing standby fallback text.');
 
-console.log('\nALL 4 AUDIT VERIFICATION CHECKS PASSED SUCCESSFULLY!\n');
+// ============================================================================
+// 5. LaTeX delimiter normalization (\[...\], \(...\), and stray [ ... ])
+// ============================================================================
+console.log('\n[TEST 5] Verifying LaTeX delimiter normalization...');
+
+const displayMathInput = 'Equation:\n\\[\nx = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}\n\\]\nText follows.';
+const normalizedDisplay = normalizeProseContent(displayMathInput);
+assert(normalizedDisplay.includes('$$\n') && normalizedDisplay.includes('\n$$'), 'FAIL: \\[ ... \\] was not converted to $$ ... $$');
+assert(!normalizedDisplay.includes('\\['), 'FAIL: Stray \\[ remaining in normalized text');
+assert(!normalizedDisplay.includes('\\]'), 'FAIL: Stray \\] remaining in normalized text');
+
+const inlineMathInput = 'Value is \\( \\Delta G^\\circ = -RT \\ln K \\) at equilibrium.';
+const normalizedInline = normalizeProseContent(inlineMathInput);
+assert(normalizedInline.includes('$\\Delta G^\\circ = -RT \\ln K$'), 'FAIL: \\( ... \\) was not converted to $...$');
+assert(!normalizedInline.includes('\\('), 'FAIL: Stray \\( remaining in normalized text');
+
+const strayBracketsInput = 'Aligned system:\n[\n\\begin{aligned}\nx + y &= 2 \\\\\nx - y &= 0\n\\end{aligned}\n]\nSolved.';
+const normalizedStray = normalizeProseContent(strayBracketsInput);
+assert(normalizedStray.includes('$$\n\\begin{aligned}'), 'FAIL: Stray [ ... ] around \\begin{aligned} was not converted to $$');
+assert(!normalizedStray.includes('[\n\\begin{aligned}'), 'FAIL: Stray [ line remaining');
+
+const bareAlignedInput = 'Raw block:\n\\begin{aligned}\na &= b\n\\end{aligned}';
+const normalizedBare = normalizeProseContent(bareAlignedInput);
+assert(normalizedBare.includes('$$\n\\begin{aligned}'), 'FAIL: Bare \\begin{aligned} was not wrapped in $$');
+
+console.log('✓ PASS: LaTeX math delimiters normalized cleanly with zero stray brackets.');
+
+console.log('\nALL 5 AUDIT VERIFICATION CHECKS PASSED SUCCESSFULLY!\n');

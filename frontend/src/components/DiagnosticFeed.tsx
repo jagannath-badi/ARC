@@ -144,6 +144,48 @@ function rehypeConfidenceBadges() {
   };
 }
 
+/**
+ * Normalizes LaTeX math delimiters outside fenced code blocks:
+ * 1. Converts \[ ... \] (single or multi-line) to $$ ... $$ display math blocks
+ * 2. Converts \( ... \) to $ ... $ inline math expressions
+ * 3. Converts stray '[' and ']' on their own lines around LaTeX math blocks into $$ ... $$
+ * 4. Wraps standalone LaTeX math environments (\begin{aligned}...\end{aligned}, etc.) in $$ ... $$ if not already delimited
+ */
+function normalizeLatexDelimiters(text: string): string {
+  if (!text) return '';
+
+  // 1. Convert \[ ... \] (single or multi-line) to $$ ... $$ display math blocks
+  text = text.replace(/\\\[([\s\S]*?)\\\]/g, (_m, eq) => {
+    return `\n\n$$\n${eq.trim()}\n$$\n\n`;
+  });
+
+  // 2. Convert \( ... \) to $ ... $ inline math expressions
+  text = text.replace(/\\\(([\s\S]*?)\\\)/g, (_m, eq) => {
+    return `$${eq.trim()}$`;
+  });
+
+  // 3. Convert stray '[' and ']' on their own lines enclosing LaTeX math
+  // (addresses LLMs emitting raw square brackets without backslashes for display equations)
+  text = text.replace(/(?:^|\n)[ \t]*\[[ \t]*\n([\s\S]*?\\[a-zA-Z][\s\S]*?)\n[ \t]*\][ \t]*(?=\n|$)/g, (_m, eq) => {
+    return `\n\n$$\n${eq.trim()}\n$$\n\n`;
+  });
+
+  // 4. Wrap standalone LaTeX environments that are not already enclosed in $$
+  // Environments: aligned, align, align*, equation, equation*, gather, gather*, matrix, pmatrix, bmatrix, vmatrix, Bmatrix, Vmatrix, cases
+  const envRegex = /(?:^|\n)[ \t]*(\\begin\{(?:aligned|align\*?|equation\*?|gather\*?|pmatrix|bmatrix|vmatrix|Bmatrix|Vmatrix|matrix|cases)\}[\s\S]*?\\end\{(?:aligned|align\*?|equation\*?|gather\*?|pmatrix|bmatrix|vmatrix|Bmatrix|Vmatrix|matrix|cases)\})[ \t]*(?=\n|$)/g;
+
+  text = text.replace(envRegex, (fullMatch, envBlock, offset, src) => {
+    const before = src.slice(0, offset);
+    const doubleDollarCount = (before.match(/\$\$/g) || []).length;
+    if (doubleDollarCount % 2 === 1) {
+      return fullMatch;
+    }
+    return `\n\n$$\n${envBlock.trim()}\n$$\n\n`;
+  });
+
+  return text;
+}
+
 function normalizeProseContent(raw: string): string {
   if (!raw) return '';
   const parts = raw.split(/(```[\s\S]*?(?:```|$))/g);
@@ -151,6 +193,7 @@ function normalizeProseContent(raw: string): string {
     let part = parts[i].replace(/\r\n/g, '\n');
     part = part.replace(/\n{3,}/g, '\n\n');
     part = part.replace(/[^\S\n]{3,}/g, ' ');
+    part = normalizeLatexDelimiters(part);
     parts[i] = part;
   }
   return parts.join('');
